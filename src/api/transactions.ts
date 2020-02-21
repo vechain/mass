@@ -51,7 +51,7 @@ router.get('/:txid', try$(async (req, res) => {
         })
     }
 
-    const raw = await getTransferByTX(txid)
+    const raw = await getTransferByTX(tx)
     const transfers = raw.map(x => {
         return {
             ...x,

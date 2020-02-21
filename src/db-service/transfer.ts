@@ -1,4 +1,4 @@
-import { getConnection, In } from 'typeorm'
+import { getConnection } from 'typeorm'
 import { AssetMovement } from '../explorer-db/entity/movement'
 import { keys, cache } from './cache'
 import { Transaction } from '../explorer-db/entity/transaction'
@@ -14,7 +14,8 @@ export const getRecentTransfers = (limit: number) => {
         .getMany()
 }
 
-export const getTransferByTX = async (txID: string) => {
+export const getTransferByTX = async (tx: Transaction) => {
+    const { txID } =  tx
     const key = keys.TX_TRANSFER(txID)
     if (cache.has(key)) {
         return cache.get(key) as AssetMovement[]
@@ -27,23 +28,10 @@ export const getTransferByTX = async (txID: string) => {
             order: {moveIndex: 'ASC'}
         })
     
-    let blockID = null
-    if (transfers.length) {
-        blockID = transfers[0].blockID
-    }
-
-    if (blockID ===null && cache.has(keys.TX(txID))) {
-        const tx = cache.get(keys.TX(txID)) as Transaction
-        blockID=tx.blockID
-    }
-
-    if (blockID) {
-        const best = cache.get(keys.LAST_BEST) as number
-
-        if (best) {
-            if (best - blockIDtoNum(blockID) >= REVERSIBLE_WINDOW) {
-                cache.set(key, transfers)
-            }
+    const best = cache.get(keys.LAST_BEST) as number
+    if (best) {
+        if (best - blockIDtoNum(tx.blockID) >= REVERSIBLE_WINDOW) {
+            cache.set(key, transfers)
         }
     }
     return transfers
