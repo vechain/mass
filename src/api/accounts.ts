@@ -3,7 +3,7 @@ import { try$, HttpError } from 'express-toolbox'
 import { isHexBytes } from '../validator'
 import { getAccount, getTokenBalance, countAccountTransaction, getAccountTransaction, getAccountTransfer, getAccountTransferByType, countAccountTransferByType, countAccountTransfer } from '../db-service/account'
 import { getAuthority, getSignedBlocks } from '../db-service/authority'
-import { AssetType } from '../explorer-db/types'
+import { AssetType, MoveDirection } from '../explorer-db/types'
 import { parseOffset, parseLimit, DEFAULT_LIMIT, BLOCK_INTERVAL, ENERGY_GROWTH_RATE, AssetLiterals } from '../utils'
 
 const router = Router()
@@ -109,13 +109,14 @@ router.get('/:address/transfers', try$(async (req, res) => {
         const raw = await getAccountTransfer(addr, offset, limit)
         const transfers = raw.map(x => {
             return {
-                ...x,
+                ...x.movement,
                 symbol: AssetType[x.type],
+                direction: MoveDirection[x.direction],
                 type: undefined,
                 meta: {
-                    blockID: x.blockID,
-                    blockNumber: x.block.number,
-                    blockTimestamp: x.block.timestamp
+                    blockID: x.movement.blockID,
+                    blockNumber: x.movement.block.number,
+                    blockTimestamp: x.movement.block.timestamp
                 },
                 block: undefined,
                 blockID: undefined,
@@ -131,13 +132,14 @@ router.get('/:address/transfers', try$(async (req, res) => {
         const raw = await getAccountTransferByType(addr, type, offset, limit)
         const transfers = raw.map(x => {
             return {
-                ...x,
+                ...x.movement,
                 symbol: AssetType[x.type],
+                direction: MoveDirection[x.direction],
                 type: undefined,
                 meta: {
-                    blockID: x.blockID,
-                    blockNumber: x.block.number,
-                    blockTimestamp: x.block.timestamp
+                    blockID: x.movement.blockID,
+                    blockNumber: x.movement.block.number,
+                    blockTimestamp: x.movement.block.timestamp
                 },
                 block:undefined,
                 blockID: undefined,

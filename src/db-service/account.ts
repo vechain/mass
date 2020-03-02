@@ -74,7 +74,7 @@ export const getAccountTransfer = async (addr: string, offset: number, limit: nu
             relations:[ 'movement', 'movement.block' ]
         })
     
-    return aggregated.map(x=>x.movement)
+    return aggregated
 }
 
 export const countAccountTransferByType = (addr: string, type: AssetType) => {
@@ -109,5 +109,5 @@ export const getAccountTransferByType = async (
             relations:[ 'movement', 'movement.block' ]
         })
     
-    return aggregated.map(x=>x.movement)
+    return aggregated
 }
