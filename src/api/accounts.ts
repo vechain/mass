@@ -1,10 +1,12 @@
 import { Router } from 'express'
 import { try$, HttpError } from 'express-toolbox'
 import { isHexBytes } from '../validator'
-import { getAccount, getTokenBalance, countAccountTransaction, getAccountTransaction, getAccountTransfer, getAccountTransferByType, countAccountTransferByType, countAccountTransfer } from '../db-service/account'
+import { getAccount, getTokenBalance } from '../db-service/account'
 import { getAuthority, getSignedBlocks } from '../db-service/authority'
 import { AssetType, MoveDirection } from '../explorer-db/types'
 import { parseOffset, parseLimit, DEFAULT_LIMIT, BLOCK_INTERVAL, ENERGY_GROWTH_RATE, AssetLiterals } from '../utils'
+import { countAccountTransaction, getAccountTransaction } from '../db-service/transaction'
+import { countAccountTransfer, getAccountTransfer, countAccountTransferByType, getAccountTransferByType } from '../db-service/transfer'
 
 const router = Router()
 export = router

@@ -1,8 +1,10 @@
-import { getConnection } from 'typeorm'
+import { getConnection, In } from 'typeorm'
 import { AssetMovement } from '../explorer-db/entity/movement'
 import { keys, cache } from './cache'
 import { Transaction } from '../explorer-db/entity/transaction'
 import { blockIDtoNum, REVERSIBLE_WINDOW } from '../utils'
+import { AggregatedMovement } from '../explorer-db/entity/aggregated-move'
+import { AssetType } from '../explorer-db/types'
 
 export const getRecentTransfers = (limit: number) => {
     return getConnection()
@@ -35,4 +37,69 @@ export const getTransferByTX = async (tx: Transaction) => {
         }
     }
     return transfers
+}
+
+export const countAccountTransfer = (addr: string) => {
+    return getConnection()
+        .getRepository(AggregatedMovement)
+        .count({participant: addr})
+}
+
+export const getAccountTransfer = async (addr: string, offset: number, limit: number) => {
+    const conn = getConnection()
+
+    const ids = await conn
+        .getRepository(AggregatedMovement)
+        .find({
+            select: ['id'],
+            where: { participant: addr },
+            order: { seq: 'DESC' },
+            take: limit,
+            skip: offset
+        })
+    
+    const aggregated = await conn
+        .getRepository(AggregatedMovement)
+        .find({
+            where: { id: In(ids.map(x => x.id)) },
+            order: { seq: 'DESC' },
+            relations:[ 'movement', 'movement.block' ]
+        })
+    
+    return aggregated
+}
+
+export const countAccountTransferByType = (addr: string, type: AssetType) => {
+    return getConnection()
+        .getRepository(AggregatedMovement)
+        .count({participant: addr, type})
+}
+
+export const getAccountTransferByType = async (
+    addr: string,
+    type: AssetType,
+    offset: number,
+    limit: number
+) => {
+    const conn = getConnection()
+
+    const ids = await conn
+        .getRepository(AggregatedMovement)
+        .find({
+            select: ['id'],
+            where: { participant: addr, type },
+            order: { seq: 'DESC' },
+            take: limit,
+            skip: offset
+        })
+    
+    const aggregated = await conn
+        .getRepository(AggregatedMovement)
+        .find({
+            where: { id: In(ids.map(x => x.id)) },
+            order: { seq: 'DESC' },
+            relations:[ 'movement', 'movement.block' ]
+        })
+    
+    return aggregated
 }
