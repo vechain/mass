@@ -2,7 +2,8 @@ import { getConnection, In } from 'typeorm'
 import { Transaction } from '../explorer-db/entity/transaction'
 import { cache, keys } from './cache'
 import { REVERSIBLE_WINDOW, blockIDtoNum } from '../utils'
-import { getAccount } from './account'
+import { AggregatedTransaction } from '../explorer-db/entity/aggregated-tx'
+import { MoveType } from '../explorer-db/types'
 
 export const getTransactionWithMeta = async (txID: string) => {
     const key = keys.TX(txID)
@@ -43,32 +44,61 @@ export const getRecentTransactions = (limit: number) => {
         .getMany()
 }
 
-export const countAccountTransaction = async (addr: string) => {
-    const acc = await getAccount(addr)
-    if (!acc) {
-        return 0
-    } else {
-        return acc.txCount
-    }
+export const countAccountTransaction = (addr: string) => {
+    return getConnection()
+        .getRepository(AggregatedTransaction)
+        .count({participant: addr})
 }
 
 export const getAccountTransaction = async (addr: string, offset: number, limit: number) => {
     const conn = getConnection()
     const ids = await conn
-        .getRepository(Transaction)
+        .getRepository(AggregatedTransaction)
         .find({
-            select: ['txID'],
-            where: { origin: addr },
+            select: ['id'],
+            where: { participant: addr },
             take: limit,
             skip: offset,
-            order: { blockID: 'DESC', txIndex: 'DESC' }
+            order: { seq: 'DESC' }
         })
     const txs = await conn
-        .getRepository(Transaction)
+        .getRepository(AggregatedTransaction)
         .find({
-            where: { txID: In(ids.map(x => x.txID)) },
-            order: { blockID: 'DESC', txIndex: 'DESC' },
-            relations:['block', 'receipt']
-        })    
+            where: { id: In(ids.map(x => x.id)) },
+            order: { seq: 'DESC'},
+            relations:['block', 'transaction', 'receipt']
+        })
+    return txs
+}
+
+export const countAccountTransactionByType = (addr: string, type: MoveType) => {
+    return getConnection()
+        .getRepository(AggregatedTransaction)
+        .count({participant: addr, type: In([MoveType.Self, type])})
+}
+
+export const getAccountTransactionByType = async (
+    addr: string,
+    type: MoveType,
+    offset: number,
+    limit: number
+) => {
+    const conn = getConnection()
+    const ids = await conn
+        .getRepository(AggregatedTransaction)
+        .find({
+            select: ['id'],
+            where: { participant: addr, type: In([MoveType.Self, type]) },
+            take: limit,
+            skip: offset,
+            order: { seq: 'DESC' }
+        })
+    const txs = await conn
+        .getRepository(AggregatedTransaction)
+        .find({
+            where: { id: In(ids.map(x => x.id)) },
+            order: { seq: 'DESC'},
+            relations:['block', 'transaction', 'receipt']
+        })
     return txs
 }

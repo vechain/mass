@@ -3,10 +3,10 @@ import { try$, HttpError } from 'express-toolbox'
 import { isHexBytes } from '../validator'
 import { getAccount, getTokenBalance } from '../db-service/account'
 import { getAuthority, getSignedBlocks } from '../db-service/authority'
-import { AssetType, MoveDirection } from '../explorer-db/types'
+import { AssetType, MoveType } from '../explorer-db/types'
 import { parseOffset, parseLimit, DEFAULT_LIMIT, BLOCK_INTERVAL, ENERGY_GROWTH_RATE, AssetLiterals } from '../utils'
-import { countAccountTransaction, getAccountTransaction } from '../db-service/transaction'
-import { countAccountTransfer, getAccountTransfer, countAccountTransferByType, getAccountTransferByType } from '../db-service/transfer'
+import { countAccountTransaction, getAccountTransaction, countAccountTransactionByType, getAccountTransactionByType } from '../db-service/transaction'
+import { countAccountTransfer, getAccountTransfer, countAccountTransferByAsset, getAccountTransferByAsset } from '../db-service/transfer'
 
 const router = Router()
 export = router
@@ -63,28 +63,59 @@ router.get('/:address/transactions', try$(async (req, res) => {
     const offset = req.query.offset ? parseOffset(req.query.offset) : 0
     const limit = req.query.limit ? parseLimit(req.query.limit) : DEFAULT_LIMIT
 
-    const count = await countAccountTransaction(addr)
-    if (!count || count <= offset) {
-        return res.json({ count, txs: [] })
-    }
-    const raw = await getAccountTransaction(addr, offset, limit)
-    const txs = raw.map(x => {
-        return {
-            ...x,
-            receipt: {
-                reverted: x.receipt.reverted
-            },
-            meta: {
-                blockID: x.blockID,
-                blockNumber: x.block.number,
-                blockTimestamp: x.block.timestamp
-            },
-            block: undefined,
-            blockID: undefined
+    let type: MoveType|null = null
+    if (req.query.type) {
+        if (['In', 'Out'].indexOf(req.query.type) === -1) {
+            throw new HttpError(400, 'invalid type')
         }
-    })
+        type = MoveType[req.query.type as keyof typeof MoveType]
+    }
 
-    res.json({count, txs})
+    if (type === null) {
+        const count = await countAccountTransaction(addr)
+        if (!count || count <= offset) {
+            return res.json({ count, txs: [] })
+        }
+        const raw = await getAccountTransaction(addr, offset, limit)
+        const txs = raw.map(x => {
+            return {
+                type: MoveType[x.type],
+                transaction: x.transaction,
+                receipt: {
+                    reverted: x.receipt.reverted
+                },
+                meta: {
+                    blockID: x.blockID,
+                    blockNumber: x.block.number,
+                    blockTimestamp: x.block.timestamp,
+                    txIndex: x.seq.txIndex
+                }
+            }
+        })
+        res.json({ count, txs })
+    } else {
+        const count = await countAccountTransactionByType(addr, type)
+        if (!count || count <= offset) {
+            return res.json({ count, txs: [] })
+        }
+        const raw = await getAccountTransactionByType(addr, type,offset, limit)
+        const txs = raw.map(x => {
+            return {
+                type: MoveType[x.type],
+                transaction: x.transaction,
+                receipt: {
+                    reverted: x.receipt.reverted
+                },
+                meta: {
+                    blockID: x.blockID,
+                    blockNumber: x.block.number,
+                    blockTimestamp: x.block.timestamp,
+                    txIndex: x.seq.txIndex
+                }
+            }
+        })
+        res.json({ count, txs })
+    }
 }))
 
 router.get('/:address/transfers', try$(async (req, res) => {
@@ -95,15 +126,15 @@ router.get('/:address/transfers', try$(async (req, res) => {
     const offset = req.query.offset ? parseOffset(req.query.offset) : 0
     const limit = req.query.limit ? parseLimit(req.query.limit) : DEFAULT_LIMIT
 
-    let type: AssetType|null = null
-    if (req.query.type) {
-        if (AssetLiterals.indexOf(req.query.type) === -1) {
-            throw new HttpError(400, 'invalid type')
+    let asset: AssetType|null = null
+    if (req.query.asset) {
+        if (AssetLiterals.indexOf(req.query.asset) === -1) {
+            throw new HttpError(400, 'invalid asset')
         }
-        type = AssetType[req.query.type as keyof typeof AssetType]
+        asset = AssetType[req.query.asset as keyof typeof AssetType]
     }
 
-    if (type === null) {
+    if (asset === null) {
         const count = await countAccountTransfer(addr)
         if (!count || count <= offset) {
             return res.json({count, transfers:[]})
@@ -112,9 +143,9 @@ router.get('/:address/transfers', try$(async (req, res) => {
         const transfers = raw.map(x => {
             return {
                 ...x.movement,
-                symbol: AssetType[x.type],
-                direction: MoveDirection[x.direction],
-                type: undefined,
+                symbol: AssetType[x.asset],
+                type: MoveType[x.type],
+                asset: undefined,
                 meta: {
                     blockID: x.movement.blockID,
                     blockNumber: x.movement.block.number,
@@ -127,17 +158,17 @@ router.get('/:address/transfers', try$(async (req, res) => {
         })
         res.json({count,transfers})
     } else {
-        const count = await countAccountTransferByType(addr, type)
+        const count = await countAccountTransferByAsset(addr, asset)
         if (!count || count <= offset) {
             return res.json({count, transfers:[]})
         }
-        const raw = await getAccountTransferByType(addr, type, offset, limit)
+        const raw = await getAccountTransferByAsset(addr, asset, offset, limit)
         const transfers = raw.map(x => {
             return {
                 ...x.movement,
-                symbol: AssetType[x.type],
-                direction: MoveDirection[x.direction],
-                type: undefined,
+                symbol: AssetType[x.asset],
+                type: MoveType[x.type],
+                asset: undefined,
                 meta: {
                     blockID: x.movement.blockID,
                     blockNumber: x.movement.block.number,

@@ -69,15 +69,15 @@ export const getAccountTransfer = async (addr: string, offset: number, limit: nu
     return aggregated
 }
 
-export const countAccountTransferByType = (addr: string, type: AssetType) => {
+export const countAccountTransferByAsset = (addr: string, asset: AssetType) => {
     return getConnection()
         .getRepository(AggregatedMovement)
-        .count({participant: addr, type})
+        .count({participant: addr, asset})
 }
 
-export const getAccountTransferByType = async (
+export const getAccountTransferByAsset = async (
     addr: string,
-    type: AssetType,
+    asset: AssetType,
     offset: number,
     limit: number
 ) => {
@@ -87,7 +87,7 @@ export const getAccountTransferByType = async (
         .getRepository(AggregatedMovement)
         .find({
             select: ['id'],
-            where: { participant: addr, type },
+            where: { participant: addr, asset },
             order: { seq: 'DESC' },
             take: limit,
             skip: offset

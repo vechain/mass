@@ -55,7 +55,7 @@ router.get('/:txid', try$(async (req, res) => {
     const transfers = raw.map(x => {
         return {
             ...x,
-            symbol: AssetType[x.type],
+            symbol: AssetType[x.asset],
             type: undefined,
             blockID: undefined,
             id: undefined
