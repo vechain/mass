@@ -25,7 +25,6 @@ router.get('/:address', try$(async (req, res) => {
             balance: BigInt(0),
             energy: BigInt(0),
             blockTime: 0,
-            txCount: 0,
             code: null,
             master: null,
             sponsor: null,
