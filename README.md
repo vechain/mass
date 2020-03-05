@@ -5,7 +5,7 @@ Backend of VeChain Official [Explorer](https://explore.vechain.org).
 ## API
 
 + `GET /api/accounts/:addr` - Get account summary
-+ `GET /api/account/:addr/transactions` - Get transactions sent by account <sup>i</sup>
++ `GET /api/account/:addr/transactions` - Get transactions of account <sup>i</sup>
 + `GET /api/account/:addr/transfers` - Get Token transfers of account <sup>i</sup>
 + `GET /api/blocks/:revision` - Get block, revision can be `best`, `block number` or `block ID`
 + `GET /api/blocks/:blockid/transactions` - Get block transactions
