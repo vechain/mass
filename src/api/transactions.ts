@@ -4,6 +4,7 @@ import { isHexBytes, isUInt } from '../validator'
 import { getTransactionWithMeta, getRecentTransactions } from '../db-service/transaction'
 import { AssetType } from '../explorer-db/types'
 import { getTransferByTX } from '../db-service/transfer'
+import { moveIndex } from '../explorer-db/transformers'
 
 const router = Router()
 export = router
@@ -20,15 +21,17 @@ router.get('/recent', try$(async (req, res) => {
     const raw = await getRecentTransactions(limit)
     const txs = raw.map(x => {
         return {
-            meta: {
-                blockID: x.blockID,
-                blockNumber: x.block.number,
-                blockTimestamp: x.block.timestamp
-            },
             ...x,
             receipt: {
                 reverted: x.receipt.reverted
             },
+            meta: {
+                blockID: x.blockID,
+                blockNumber: x.block.number,
+                blockTimestamp: x.block.timestamp,
+                txIndex: x.txIndex
+            },
+            txIndex: undefined,
             blockID: undefined,
             block: undefined
         }
@@ -56,6 +59,8 @@ router.get('/:txid', try$(async (req, res) => {
         return {
             ...x,
             symbol: AssetType[x.asset],
+            meta:{...x.moveIndex},
+            asset: undefined,
             type: undefined,
             blockID: undefined,
             id: undefined
@@ -63,13 +68,13 @@ router.get('/:txid', try$(async (req, res) => {
     })
 
     res.json({
+        tx:{...tx, block: undefined, blockID: undefined, receipt: undefined, txIndex: undefined},
+        receipt:{...tx.receipt, blockID: undefined, txIndex: undefined},
+        transfers,
         meta: {
             blockID: tx.blockID,
             blockNumber: tx.block.number,
             blockTimestamp: tx.block.timestamp
         },
-        tx:{...tx, block: undefined, blockID: undefined, receipt: undefined},
-        receipt:{...tx.receipt, blockID: undefined},
-        transfers
     })
 }))

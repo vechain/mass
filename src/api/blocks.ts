@@ -62,12 +62,12 @@ router.get('/:blockid/transactions', try$(async (req, res) => {
 
     if (block.txCount === 0) {
         return res.json({
+            txs:[],
             meta: {
                 blockID: block.id,
                 blockNumber: block.number,
                 blockTimestamp: block.timestamp
-            },
-            txs:[]
+            }
         })
     }
 
@@ -85,16 +85,17 @@ router.get('/:blockid/transactions', try$(async (req, res) => {
             receipt: {
                 reverted: x.receipt.reverted
             },
+            txIndex: undefined,
             id: undefined,
             blockID: undefined
         }
     })
     res.json({
+        txs,
         meta: {
             blockID: block.id,
             blockNumber: block.number,
             blockTimestamp: block.timestamp
-        },
-        txs
+        }
     })
 }))

@@ -78,8 +78,7 @@ router.get('/:address/transactions', try$(async (req, res) => {
         const raw = await getAccountTransaction(addr, offset, limit)
         const txs = raw.map(x => {
             return {
-                type: MoveType[x.type],
-                transaction: x.transaction,
+                ...x.transaction,
                 receipt: {
                     reverted: x.receipt.reverted
                 },
@@ -88,7 +87,9 @@ router.get('/:address/transactions', try$(async (req, res) => {
                     blockNumber: x.block.number,
                     blockTimestamp: x.block.timestamp,
                     txIndex: x.seq.txIndex
-                }
+                },
+                blockID: undefined,
+                txIndex: undefined
             }
         })
         res.json({ count, txs })
@@ -100,8 +101,7 @@ router.get('/:address/transactions', try$(async (req, res) => {
         const raw = await getAccountTransactionByType(addr, type,offset, limit)
         const txs = raw.map(x => {
             return {
-                type: MoveType[x.type],
-                transaction: x.transaction,
+                ...x.transaction,
                 receipt: {
                     reverted: x.receipt.reverted
                 },
@@ -110,7 +110,9 @@ router.get('/:address/transactions', try$(async (req, res) => {
                     blockNumber: x.block.number,
                     blockTimestamp: x.block.timestamp,
                     txIndex: x.seq.txIndex
-                }
+                },
+                blockID: undefined,
+                txIndex: undefined
             }
         })
         res.json({ count, txs })
@@ -143,13 +145,15 @@ router.get('/:address/transfers', try$(async (req, res) => {
             return {
                 ...x.movement,
                 symbol: AssetType[x.asset],
-                type: MoveType[x.type],
-                asset: undefined,
                 meta: {
                     blockID: x.movement.blockID,
                     blockNumber: x.movement.block.number,
-                    blockTimestamp: x.movement.block.timestamp
+                    blockTimestamp: x.movement.block.timestamp,
+                    ...x.seq.moveIndex
                 },
+                asset: undefined,
+                type: undefined,
+                moveIndex:undefined,
                 block: undefined,
                 blockID: undefined,
                 id: undefined
@@ -166,13 +170,15 @@ router.get('/:address/transfers', try$(async (req, res) => {
             return {
                 ...x.movement,
                 symbol: AssetType[x.asset],
-                type: MoveType[x.type],
-                asset: undefined,
                 meta: {
                     blockID: x.movement.blockID,
                     blockNumber: x.movement.block.number,
-                    blockTimestamp: x.movement.block.timestamp
+                    blockTimestamp: x.movement.block.timestamp,
+                    ...x.seq.moveIndex
                 },
+                asset: undefined,
+                type:undefined,
+                moveIndex: undefined,
                 block:undefined,
                 blockID: undefined,
                 id: undefined

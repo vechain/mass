@@ -22,14 +22,17 @@ router.get('/recent', try$(async (req, res) => {
         return {
             ...x,
             symbol: AssetType[x.asset],
-            type: undefined,
-            id: undefined,
-            blockID: undefined,
             meta: {
                 blockID: x.blockID,
                 blockNumber: x.block.number,
-                blockTimestamp: x.block.timestamp
+                blockTimestamp: x.block.timestamp,
+                ...x.moveIndex
             },
+            type: undefined,
+            asset: undefined,
+            moveIndex: undefined,
+            id: undefined,
+            blockID: undefined,
             block:undefined
         }
     })
