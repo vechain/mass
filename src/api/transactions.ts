@@ -4,6 +4,7 @@ import { isHexBytes, isUInt } from '../validator'
 import { AssetType } from '../explorer-db/types'
 import { getRecentTransactions, getTransaction } from '../db-service/transaction'
 import { getTransferByTX } from '../db-service/transfer'
+import { getPendingTx } from '../thor'
 
 const router = Router()
 export = router
@@ -54,6 +55,15 @@ router.get('/:txid', try$(async (req, res) => {
     const txid = req.params.txid
     const tx = await getTransaction(txid)
     if (!tx) {
+        const pending = await getPendingTx(txid)
+        if (pending) {
+            return res.json({
+                meta: null,
+                tx: pending,
+                receipt: null,
+                transfers:[]
+            })
+        }
         return res.json({
             meta: null,
             tx: null,
