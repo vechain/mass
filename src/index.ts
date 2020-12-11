@@ -5,7 +5,7 @@
  */
 
 import { app } from './app'
-import * as Http from 'http'
+import * as http from 'http'
 
 /**
  * Get port from environment and store in Express.
@@ -18,7 +18,7 @@ app.set('port', port)
  * Create HTTP server.
  */
 
-const server = Http.createServer(app)
+const server = http.createServer(app)
 
 /**
  * Listen on provided port, on all network interfaces.
