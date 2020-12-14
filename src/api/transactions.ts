@@ -108,7 +108,9 @@ router.get('/:txid', try$(async (req, res) => {
             paid: tx.transaction.paid,
             reward: tx.transaction.reward,
             reverted: tx.transaction.reverted,
-            outputs: tx.transaction.outputs
+            outputs: tx.transaction.outputs,
+            // revert reason will be present when OP_REVERT with message, error will be 'execution reverted'
+            vmError: tx.transaction.vmError
         },
         transfers,
         meta: {

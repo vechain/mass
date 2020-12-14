@@ -30,6 +30,8 @@ router.get('/:address', try$(async (req, res) => {
             sponsor: null,
             firstSeen: 0,
             alias: null,
+            suicided: false,
+            deployer: null,
         }
     }
     const tokens: Array<{symbol:string, balance:bigint}> = []
