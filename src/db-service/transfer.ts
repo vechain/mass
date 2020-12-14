@@ -1,6 +1,6 @@
 import { getConnection, In, Between } from 'typeorm'
-import { keys, cache } from './cache'
-import { blockIDtoNum, REVERSIBLE_WINDOW } from '../utils'
+import { keys, cache, isNonReversible } from './cache'
+import { blockIDtoNum } from '../utils'
 import { AssetMovement } from '../explorer-db/entity/movement'
 import { AggregatedMovement } from '../explorer-db/entity/aggregated-move'
 import { AssetType } from '../explorer-db/types'
@@ -30,11 +30,8 @@ export const getTransferByTX = async (tx: TransactionMeta) => {
             order: {moveIndex: 'ASC'}
         })
     
-    const best = cache.get(keys.LAST_BEST) as number
-    if (best) {
-        if (best - blockIDtoNum(tx.blockID) >= REVERSIBLE_WINDOW) {
-            cache.set(key, transfers)
-        }
+    if (isNonReversible(blockIDtoNum(tx.blockID))) {
+        cache.set(key, transfers)
     }
     return transfers
 }

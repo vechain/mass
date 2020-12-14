@@ -1,7 +1,7 @@
 import { Block } from '../explorer-db/entity/block'
 import { getConnection, In, LessThanOrEqual, MoreThanOrEqual } from 'typeorm'
-import { cache, keys } from './cache'
-import { REVERSIBLE_WINDOW, BLOCK_INTERVAL, blockIDtoNum } from '../utils'
+import { cache, keys, isNonReversible } from './cache'
+import { BLOCK_INTERVAL, blockIDtoNum } from '../utils'
 import { TransactionMeta } from '../explorer-db/entity/tx-meta'
 import { BranchTransaction } from '../explorer-db/entity/branch-transaction'
 
@@ -29,7 +29,7 @@ export const getBest = async () => {
     if (gap >= 0 && gap < BLOCK_INTERVAL) {
         cache.set(keys.BEST, b, (BLOCK_INTERVAL-gap)*1000)
     }
-    cache.set(keys.LAST_BEST, b.number)
+    cache.set(keys.LATEST, b.number)
 
     return b 
 }
@@ -57,17 +57,13 @@ export const getBlockByID = async (blockID: string) => {
     if (!b) {
         return b
     }
-    
-    const best = cache.get(keys.LAST_BEST) as number
-    if (best) {
-        if (best - b.number >= REVERSIBLE_WINDOW) {
-            cache.set(key, b)
-            if (b.isTrunk === true) {
-                cache.set(keys.BLOCK_BY_NUMBER(b.number), b)
-            }
+
+    if (isNonReversible(b.number)) {
+        cache.set(key, b)
+        if (b.isTrunk === true) {
+            cache.set(keys.BLOCK_BY_NUMBER(b.number), b)
         }
     }
-
     return b
 }
 
@@ -85,14 +81,10 @@ export const getBlockByNumber = async (num: number) => {
         return b
     }
     
-    const best = cache.get(keys.LAST_BEST) as number
-    if (best) {
-        if (best - b.number >= REVERSIBLE_WINDOW) {
-            cache.set(keys.BLOCK_BY_ID(b.id), b)
-            cache.set(key, b)
-        }
+    if (isNonReversible(b.number)) {
+        cache.set(keys.BLOCK_BY_ID(b.id), b)
+        cache.set(key, b)
     }
-
     return b  
 }
 
@@ -126,13 +118,9 @@ export const getBlockNeighbourInTrunk = async (num: number) => {
         }
     }
 
-    const best = cache.get(keys.LAST_BEST) as number
-    if (best) {
-        if (best - num > REVERSIBLE_WINDOW) {
-            cache.set(key, nei)
-        }
+    if (isNonReversible(num)) {
+        cache.set(key, nei)
     }
-
     return nei
 }
 
@@ -149,14 +137,10 @@ export const getBlockTransactions = async (blockID: string) => {
             order: { seq: 'ASC' },
             relations: ['transaction']
         })
-    
-    const best = cache.get(keys.LAST_BEST) as number
-    if (best) {
-        if (best - blockIDtoNum(blockID) > REVERSIBLE_WINDOW) {
-            cache.set(key, txs)
-        }
-    }
 
+    if (isNonReversible(blockIDtoNum(blockID))) {
+        cache.set(key, txs)
+    }
     return txs
 }
 

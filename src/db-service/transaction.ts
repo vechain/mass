@@ -1,6 +1,6 @@
 import { getConnection, In } from 'typeorm'
-import { cache, keys } from './cache'
-import { REVERSIBLE_WINDOW, blockIDtoNum } from '../utils'
+import { cache, isNonReversible, keys } from './cache'
+import { blockIDtoNum } from '../utils'
 import { AggregatedTransaction } from '../explorer-db/entity/aggregated-tx'
 import { MoveType } from '../explorer-db/types'
 import { TransactionMeta } from '../explorer-db/entity/tx-meta'
@@ -22,13 +22,9 @@ export const getTransaction = async (txID: string) => {
         return tx
     }
 
-    const best = cache.get(keys.LAST_BEST) as number
-    if (best) {
-        if (best - blockIDtoNum(tx.blockID) >= REVERSIBLE_WINDOW) {
-            cache.set(key, tx)
-        }
+    if (isNonReversible(blockIDtoNum(tx.blockID))) {
+        cache.set(key, tx)
     }
-
     return tx
 }
 
