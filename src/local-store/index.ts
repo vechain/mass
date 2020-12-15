@@ -1,10 +1,11 @@
 import * as os from 'os'
 import * as path from 'path'
-import { createConnection} from 'typeorm'
+import { createConnection, LessThan } from 'typeorm'
+import { Transaction } from './entities/transaction'
 
 export const initLocalStore = async () => {
     const location = path.join(os.homedir(), '.mass', 'local.db')
-    await createConnection({
+    const conn = await createConnection({
         name: 'local',
         type: 'better-sqlite3',
         database: location,
@@ -13,4 +14,11 @@ export const initLocalStore = async () => {
         logging: true,
         logger:"advanced-console"
     })
+    const repo = conn.getRepository(Transaction)
+    const count = await repo.count()
+    if (count > 100000) {
+        // remove the txs that added 30 days before
+        const timeline = new Date(Date.now()- 30 * 86400 * 1000)
+        await repo.delete({createdAt: LessThan(timeline.toISOString())})
+    }
 }
