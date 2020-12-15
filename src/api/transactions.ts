@@ -4,7 +4,7 @@ import { isHexBytes, isUInt } from '../validator'
 import { AssetType } from '../explorer-db/types'
 import { getRecentTransactions, getTransaction } from '../db-service/transaction'
 import { getTransferByTX } from '../db-service/transfer'
-import { getPendingTx } from '../thor'
+import { getPending } from '../db-service/pending'
 
 const router = Router()
 export = router
@@ -54,69 +54,75 @@ router.get('/:txid', try$(async (req, res) => {
     }
     const txid = req.params.txid
     const tx = await getTransaction(txid)
+    if (tx) {
+        const raw = await getTransferByTX(tx)
+        const transfers = raw.map(x => {
+            return {
+                ...x,
+                symbol: AssetType[x.asset],
+                meta: { ...x.moveIndex },
+                moveIndex: undefined, 
+                asset: undefined,
+                type: undefined,
+                blockID: undefined,
+                id: undefined
+            }
+        })
+    
+        res.json({
+            tx: {
+                txID: tx.txID,
+                chainTag: tx.transaction.chainTag,
+                blockRef: tx.transaction.blockRef,
+                expiration: tx.transaction.expiration,
+                gasPriceCoef: tx.transaction.gasPriceCoef,
+                gas: tx.transaction.gas,
+                nonce: tx.transaction.nonce,
+                dependsOn: tx.transaction.dependsOn,
+                origin: tx.transaction.origin,
+                delegator: tx.transaction.delegator,
+                clauses: tx.transaction.clauses,
+                size: tx.transaction.size,
+            },
+            receipt: {
+                txID: tx.txID,
+                gasUsed: tx.transaction.gasUsed,
+                gasPayer: tx.transaction.gasPayer,
+                paid: tx.transaction.paid,
+                reward: tx.transaction.reward,
+                reverted: tx.transaction.reverted,
+                outputs: tx.transaction.outputs,
+                // revert reason will be present when OP_REVERT with message, error will be 'execution reverted'
+                vmError: tx.transaction.vmError
+            },
+            transfers,
+            meta: {
+                blockID: tx.blockID,
+                blockNumber: tx.block.number,
+                blockTimestamp: tx.block.timestamp
+            },
+        })
+        return
+    }
+
     if (!tx) {
-        const pending = await getPendingTx(txid)
+        const pending = await getPending(txid)
         if (pending) {
-            return res.json({
+            res.json({
                 meta: null,
                 tx: pending,
                 receipt: null,
                 transfers:[]
             })
+            return
         }
-        return res.json({
+        res.json({
             meta: null,
             tx: null,
             receipt: null,
             transfers:[]
         })
+        return
     }
 
-    const raw = await getTransferByTX(tx)
-    const transfers = raw.map(x => {
-        return {
-            ...x,
-            symbol: AssetType[x.asset],
-            meta: { ...x.moveIndex },
-            moveIndex: undefined, 
-            asset: undefined,
-            type: undefined,
-            blockID: undefined,
-            id: undefined
-        }
-    })
-
-    res.json({
-        tx: {
-            txID: tx.txID,
-            chainTag: tx.transaction.chainTag,
-            blockRef: tx.transaction.blockRef,
-            expiration: tx.transaction.expiration,
-            gasPriceCoef: tx.transaction.gasPriceCoef,
-            gas: tx.transaction.gas,
-            nonce: tx.transaction.nonce,
-            dependsOn: tx.transaction.dependsOn,
-            origin: tx.transaction.origin,
-            delegator: tx.transaction.delegator,
-            clauses: tx.transaction.clauses,
-            size: tx.transaction.size,
-        },
-        receipt: {
-            txID: tx.txID,
-            gasUsed: tx.transaction.gasUsed,
-            gasPayer: tx.transaction.gasPayer,
-            paid: tx.transaction.paid,
-            reward: tx.transaction.reward,
-            reverted: tx.transaction.reverted,
-            outputs: tx.transaction.outputs,
-            // revert reason will be present when OP_REVERT with message, error will be 'execution reverted'
-            vmError: tx.transaction.vmError
-        },
-        transfers,
-        meta: {
-            blockID: tx.blockID,
-            blockNumber: tx.block.number,
-            blockTimestamp: tx.block.timestamp
-        },
-    })
 }))

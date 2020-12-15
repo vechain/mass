@@ -14,5 +14,25 @@ const headerValidator = (headers: Record<string, string>) => {
 }
 
 export const getPendingTx = (txid: string) => {
-    return net.http('GET', `transactions/${txid}`, { query: { pending: 'true'}, validateResponseHeader: headerValidator } )
+    return net.http<PendingTransaction>('GET', `transactions/${txid}`, { query: { pending: 'true'}, validateResponseHeader: headerValidator } )
+}
+
+export type PendingTransaction = {
+    id: string
+    chainTag: number
+    blockRef: string
+    expiration: number
+    clauses: Array<{
+        to: string | null
+        value: string
+        data: string
+    }>
+    gasPriceCoef: number
+    gas: number
+    origin: string
+    delegator?: string | null
+    nonce: string
+    dependsOn: string | null
+    size: number
+    meta: null
 }
