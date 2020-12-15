@@ -10,9 +10,7 @@ export const initLocalStore = async () => {
         type: 'better-sqlite3',
         database: location,
         entities: [path.join(__dirname, 'entities/*')],
-        synchronize: true,
-        logging: true,
-        logger:"advanced-console"
+        synchronize: true
     })
     const repo = conn.getRepository(Transaction)
     const count = await repo.count()
