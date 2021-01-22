@@ -9,18 +9,18 @@ import { getPending } from '../db-service/pending'
 const router = Router()
 export = router
 
-router.get('/recent', try$(async (req, res) => { 
+router.get('/recent', try$(async (req, res) => {
     let limit = 12
     if (req.query.limit) {
         const num = parseInt(req.query.limit)
-        if (isNaN(num)||!isUInt(num) || !num || num>50) { 
+        if (isNaN(num) || !isUInt(num) || !num || num > 50) {
             throw new HttpError(400, 'invalid limit')
         }
         limit = num
     }
     const raw = await getRecentTransactions(limit)
     const txs = raw.map(x => {
-        const tx=x.transaction
+        const tx = x.transaction
         return {
             txID: x.txID,
             chainTag: tx.chainTag,
@@ -45,7 +45,7 @@ router.get('/recent', try$(async (req, res) => {
             }
         }
     })
-    res.json({txs})
+    res.json({ txs })
 }))
 
 router.get('/:txid', try$(async (req, res) => {
@@ -61,14 +61,14 @@ router.get('/:txid', try$(async (req, res) => {
                 ...x,
                 symbol: AssetType[x.asset],
                 meta: { ...x.moveIndex },
-                moveIndex: undefined, 
+                moveIndex: undefined,
                 asset: undefined,
                 type: undefined,
                 blockID: undefined,
                 id: undefined
             }
         })
-    
+
         res.json({
             tx: {
                 txID: tx.txID,
@@ -110,9 +110,9 @@ router.get('/:txid', try$(async (req, res) => {
         if (pending) {
             res.json({
                 meta: null,
-                tx: pending,
+                tx: { ...pending, txID: pending.id, id: undefined },
                 receipt: null,
-                transfers:[]
+                transfers: []
             })
             return
         }
@@ -120,7 +120,7 @@ router.get('/:txid', try$(async (req, res) => {
             meta: null,
             tx: null,
             receipt: null,
-            transfers:[]
+            transfers: []
         })
         return
     }
