@@ -7,11 +7,16 @@ export const DEFAULT_LIMIT = 20
 export const BLOCK_INTERVAL = 10
 export const REVERSIBLE_WINDOW = 12
 export const ENERGY_GROWTH_RATE = BigInt(5000000000)
-export const AssetLiterals =  [  'VET', 'VTHO', 'PLA', 'SHA', 'EHrT', 'DBET', 'TIC', 'OCE', 'SNK', 'JUR', 'AQD', 'YEET', 'HAI', 'MDN', 'VEED', 'VPU']
 
-export const parseLimit = (limit: string, maximum=MAX_LIMIT):number => {
+const AssetLiterals = ['VET', 'VTHO', 'PLA', 'SHA', 'EHrT', 'DBET', 'TIC', 'OCE', 'SNK', 'JUR', 'AQD', 'YEET', 'HAI', 'MDN', 'VEED', 'VPU']
+const AssetMap = new Map<string, string>()
+for (let asset of AssetLiterals) {
+    AssetMap.set(asset.toLowerCase(), asset)
+}
+
+export const parseLimit = (limit: string, maximum = MAX_LIMIT): number => {
     const num = parseInt(limit)
-    if (isNaN(num)||!isUInt(num)||!num) { 
+    if (isNaN(num) || !isUInt(num) || !num) {
         throw new HttpError(400, 'invalid limit')
     }
     if (num > maximum) {
@@ -20,9 +25,9 @@ export const parseLimit = (limit: string, maximum=MAX_LIMIT):number => {
     return num
 }
 
-export const parseOffset = (offset: string, maximum=MAX_OFFSET): number => {
+export const parseOffset = (offset: string, maximum = MAX_OFFSET): number => {
     const num = parseInt(offset)
-    if (isNaN(num)||!isUInt(num)) { 
+    if (isNaN(num) || !isUInt(num)) {
         throw new HttpError(400, 'invalid offset')
     }
     if (num > maximum) {
@@ -50,9 +55,17 @@ export const sanitizeHex = (val: string) => {
 }
 
 export const hexToBuffer = (val: string) => {
-    if ( !/^0x[0-9a-fA-f]+/i.test(val)) {
+    if (!/^0x[0-9a-fA-f]+/i.test(val)) {
         throw new Error('hex string required as param but got: ' + val)
     }
 
     return Buffer.from(sanitizeHex(val), 'hex')
+}
+
+export const normalizeAsset = (asset: string): string | null => {
+    const key = asset.toLowerCase()
+    if (AssetMap.has(key)) {
+        return AssetMap.get(key)!
+    } 
+    return null
 }
