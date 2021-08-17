@@ -4,7 +4,7 @@ import { isHexBytes } from '../validator'
 import { getAccount, getTokenBalance } from '../db-service/account'
 import { getAuthority, getSignedBlocks } from '../db-service/authority'
 import { AssetType, MoveType } from '../explorer-db/types'
-import { parseOffset, parseLimit, DEFAULT_LIMIT, BLOCK_INTERVAL, ENERGY_GROWTH_RATE, AssetLiterals } from '../utils'
+import { parseOffset, parseLimit, DEFAULT_LIMIT, BLOCK_INTERVAL, ENERGY_GROWTH_RATE, normalizeAsset } from '../utils'
 import { countAccountTransaction, getAccountTransaction, countAccountTransactionByType, getAccountTransactionByType } from '../db-service/transaction'
 import { countAccountTransfer, getAccountTransfer, countAccountTransferByAsset, getAccountTransferByAsset } from '../db-service/transfer'
 
@@ -151,10 +151,11 @@ router.get('/:address/transfers', try$(async (req, res) => {
 
     let asset: AssetType|null = null
     if (req.query.asset) {
-        if (AssetLiterals.indexOf(req.query.asset) === -1) {
+        const ass = normalizeAsset(req.query.asset)
+        if (!ass) {
             throw new HttpError(400, 'invalid asset')
         }
-        asset = AssetType[req.query.asset as keyof typeof AssetType]
+        asset = AssetType[ass as keyof typeof AssetType]
     }
 
     if (asset === null) {
