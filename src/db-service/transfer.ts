@@ -1,5 +1,5 @@
 import { getConnection, In, Between } from 'typeorm'
-import { keys, cache, isNonReversible } from './cache'
+import { keys, cache, isNonReversible, agedCache } from './cache'
 import { blockIDtoNum } from '../utils'
 import { AssetMovement } from '../explorer-db/entity/movement'
 import { AggregatedMovement } from '../explorer-db/entity/aggregated-move'
@@ -17,7 +17,7 @@ export const getRecentTransfers = (limit: number) => {
 }
 
 export const getTransferByTX = async (tx: TransactionMeta) => {
-    const { txID } =  tx
+    const { txID } = tx
     const key = keys.TX_TRANSFER(txID)
     if (cache.has(key)) {
         return cache.get(key) as AssetMovement[]
@@ -27,19 +27,29 @@ export const getTransferByTX = async (tx: TransactionMeta) => {
         .getRepository(AssetMovement)
         .find({
             where: { txID },
-            order: {moveIndex: 'ASC'}
+            order: { moveIndex: 'ASC' }
         })
-    
+
     if (isNonReversible(blockIDtoNum(tx.blockID))) {
         cache.set(key, transfers)
     }
     return transfers
 }
 
-export const countAccountTransfer = (addr: string) => {
-    return getConnection()
+export const countAccountTransfer = async (addr: string) => {
+    const key = keys.TRANSFER_COUNT(addr, 'ALL')
+    if (agedCache.has(key)) {
+        return agedCache.get(key) as number
+    }
+
+    const count = await getConnection()
         .getRepository(AggregatedMovement)
-        .count({participant: addr})
+        .count({ participant: addr })
+
+    if (count >= 50000) {
+        agedCache.set(key, count)
+    }
+    return count
 }
 
 export const getAccountTransfer = async (addr: string, offset: number, limit: number) => {
@@ -54,26 +64,37 @@ export const getAccountTransfer = async (addr: string, offset: number, limit: nu
             take: limit,
             skip: offset
         })
-    
+
     if (!ids.length) {
         return []
     }
-    
+
     const aggregated = await conn
         .getRepository(AggregatedMovement)
         .find({
             where: { id: In(ids.map(x => x.id)) },
             order: { seq: 'DESC' },
-            relations:[ 'movement', 'movement.block' ]
+            relations: ['movement', 'movement.block']
         })
-    
+
     return aggregated
 }
 
-export const countAccountTransferByAsset = (addr: string, asset: AssetType) => {
-    return getConnection()
+export const countAccountTransferByAsset = async (addr: string, asset: AssetType) => {
+    const key = keys.TRANSFER_COUNT(addr, AssetType[asset])
+    if (agedCache.has(key)) {
+        return agedCache.get(key) as number
+    }
+
+    const count = await getConnection()
         .getRepository(AggregatedMovement)
-        .count({participant: addr, asset})
+        .count({ participant: addr, asset })
+
+    if (count >= 50000) {
+        agedCache.set(key, count)
+    }
+
+    return count
 }
 
 export const getAccountTransferByAsset = async (
@@ -93,23 +114,23 @@ export const getAccountTransferByAsset = async (
             take: limit,
             skip: offset
         })
-    
+
     if (!ids.length) {
         return []
     }
-    
+
     const aggregated = await conn
         .getRepository(AggregatedMovement)
         .find({
             where: { id: In(ids.map(x => x.id)) },
             order: { seq: 'DESC' },
-            relations:[ 'movement', 'movement.block' ]
+            relations: ['movement', 'movement.block']
         })
-    
+
     return aggregated
 }
 
-export const getAccountTransferByRange = async (addr: string, fromBlock: number, toBlock: number, limit=5000)=>{
+export const getAccountTransferByRange = async (addr: string, fromBlock: number, toBlock: number, limit = 5000) => {
     const conn = getConnection()
 
     const ids = await conn
@@ -120,10 +141,10 @@ export const getAccountTransferByRange = async (addr: string, fromBlock: number,
                 participant: addr,
                 seq: Between({
                     blockNumber: fromBlock,
-                    moveIndex: {txIndex: 0,clauseIndex: 0,logIndex: 0}
+                    moveIndex: { txIndex: 0, clauseIndex: 0, logIndex: 0 }
                 }, {
                     blockNumber: toBlock,
-                    moveIndex: {txIndex: 65535,clauseIndex: 0,logIndex: 0}
+                    moveIndex: { txIndex: 65535, clauseIndex: 0, logIndex: 0 }
                 })
             },
             order: { seq: 'ASC' },
@@ -138,7 +159,7 @@ export const getAccountTransferByRange = async (addr: string, fromBlock: number,
         .find({
             where: { id: In(ids.map(x => x.id)) },
             order: { seq: 'ASC' },
-            relations:[ 'movement', 'movement.block', 'movement.transaction' ]
+            relations: ['movement', 'movement.block', 'movement.transaction']
         })
 
     return aggregated

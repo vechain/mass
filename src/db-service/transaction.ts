@@ -1,5 +1,5 @@
 import { getConnection, In } from 'typeorm'
-import { cache, isNonReversible, keys } from './cache'
+import { agedCache, cache, isNonReversible, keys } from './cache'
 import { blockIDtoNum } from '../utils'
 import { AggregatedTransaction } from '../explorer-db/entity/aggregated-tx'
 import { MoveType } from '../explorer-db/types'
@@ -14,10 +14,10 @@ export const getTransaction = async (txID: string) => {
     const tx = await getConnection()
         .getRepository(TransactionMeta)
         .findOne({
-            where:{txID},
+            where: { txID },
             relations: ['transaction', 'block']
         })
-    
+
     if (!tx) {
         return tx
     }
@@ -37,7 +37,7 @@ export const getRecentTransactions = async (limit: number) => {
             order: { seq: 'DESC' },
             take: limit,
         })
-    
+
     if (!ids.length) {
         return []
     }
@@ -52,10 +52,20 @@ export const getRecentTransactions = async (limit: number) => {
     return txs
 }
 
-export const countAccountTransaction = (addr: string) => {
-    return getConnection()
+export const countAccountTransaction = async (addr: string) => {
+    const key = keys.TX_COUNT(addr, 'ALL')
+    if (agedCache.has(key)) {
+        return agedCache.get(key) as number
+    }
+
+    const count = await getConnection()
         .getRepository(AggregatedTransaction)
-        .count({participant: addr})
+        .count({ participant: addr })
+
+    if (count >= 50000) {
+        agedCache.set(key, count)
+    }
+    return count
 }
 
 export const getAccountTransaction = async (addr: string, offset: number, limit: number) => {
@@ -76,16 +86,26 @@ export const getAccountTransaction = async (addr: string, offset: number, limit:
         .getRepository(AggregatedTransaction)
         .find({
             where: { id: In(ids.map(x => x.id)) },
-            order: { seq: 'DESC'},
-            relations:['block', 'transaction']
+            order: { seq: 'DESC' },
+            relations: ['block', 'transaction']
         })
     return txs
 }
 
-export const countAccountTransactionByType = (addr: string, type: MoveType) => {
-    return getConnection()
+export const countAccountTransactionByType = async (addr: string, type: MoveType) => {
+    const key = keys.TX_COUNT(addr, MoveType[type])
+    if (agedCache.has(key)) {
+        return agedCache.get(key) as number
+    }
+
+    const count = await getConnection()
         .getRepository(AggregatedTransaction)
-        .count({participant: addr, type: In([MoveType.Self, type])})
+        .count({ participant: addr, type: In([MoveType.Self, type]) })
+    
+    if (count >= 50000) {
+        agedCache.set(key, count)
+    }
+    return count
 }
 
 export const getAccountTransactionByType = async (
@@ -111,8 +131,8 @@ export const getAccountTransactionByType = async (
         .getRepository(AggregatedTransaction)
         .find({
             where: { id: In(ids.map(x => x.id)) },
-            order: { seq: 'DESC'},
-            relations:['block', 'transaction']
+            order: { seq: 'DESC' },
+            relations: ['block', 'transaction']
         })
     return txs
 }
