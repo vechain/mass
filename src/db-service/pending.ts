@@ -10,7 +10,7 @@ type PendingTransactionWithState = Omit<thor.PendingTransaction, 'meta'> & { sta
 enum PendingState {
     PENDING = 'PENDING',
     EXPIRED = 'EXPIRED',
-    DEP_REVERTED = 'DEP REVERTED',
+    DEP_BROKEN = 'DEP BROKEN',
 }
 
 const cache = new LRU<string, PendingTransactionWithState>(1024)
@@ -74,10 +74,10 @@ const updateStatus = async (tx: PendingTransactionWithState): Promise<void> => {
         const dep = await getTransaction(tx.dependsOn)
 
         if (!!dep && dep.transaction.reverted) {
-            tx.state = PendingState.DEP_REVERTED
+            tx.state = PendingState.DEP_BROKEN
 
             if (isNonReversible(dep.block.number)) {
-                await repo.update({ txID: tx.id }, { state: PendingState.DEP_REVERTED })
+                await repo.update({ txID: tx.id }, { state: PendingState.DEP_BROKEN })
                 cache.set(tx.id, tx)
             }
         }
