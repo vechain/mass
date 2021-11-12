@@ -2,8 +2,7 @@ import { Router } from 'express'
 import { try$, HttpError } from 'express-toolbox'
 import { Block } from '../explorer-db/entity/block'
 import { getBest, getBlockByID, getBlockTransactions, getRecentBlocks, getBlockNeighbourInTrunk, getBlockByNumber, getBranchBlockTransactions } from '../db-service/block'
-import { isHexBytes, isUInt } from '../validator'
-import { parseLimit, DEFAULT_LIMIT } from '../utils'
+import { parseLimit, DEFAULT_LIMIT, isHexBytes, isUInt } from '../utils'
 
 const router = Router()
 export = router

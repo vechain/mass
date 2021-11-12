@@ -1,6 +1,6 @@
 import { Router } from 'express'
 import { try$, HttpError } from 'express-toolbox'
-import { isUInt } from '../validator'
+import { isUInt } from '../utils'
 import { getRecentTransfers } from '../db-service/transfer'
 import { AssetType } from '../explorer-db/types'
 

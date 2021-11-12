@@ -1,10 +1,9 @@
 import { Router } from 'express'
 import { try$, HttpError } from 'express-toolbox'
-import { isHexBytes } from '../validator'
 import { getAccount, getTokenBalance } from '../db-service/account'
 import { getAuthority, getSignedBlocks } from '../db-service/authority'
 import { AssetType, MoveType } from '../explorer-db/types'
-import { parseOffset, parseLimit, DEFAULT_LIMIT, BLOCK_INTERVAL, ENERGY_GROWTH_RATE, normalizeAsset } from '../utils'
+import { parseOffset, parseLimit, DEFAULT_LIMIT, BLOCK_INTERVAL, ENERGY_GROWTH_RATE, normalizeAsset, isHexBytes } from '../utils'
 import { countAccountTransaction, getAccountTransaction, countAccountTransactionByType, getAccountTransactionByType } from '../db-service/transaction'
 import { countAccountTransfer, getAccountTransfer, countAccountTransferByAsset, getAccountTransferByAsset } from '../db-service/transfer'
 
@@ -34,25 +33,25 @@ router.get('/:address', try$(async (req, res) => {
             deployer: null,
         }
     }
-    const tokens: Array<{symbol:string, balance:bigint}> = []
+    const tokens: Array<{ symbol: string, balance: bigint }> = []
     for (let x of t) {
         tokens.push({ symbol: AssetType[x.type], balance: x.balance })
     }
-    
-    const ts = Math.floor(new Date().getTime()/1000)
+
+    const ts = Math.floor(new Date().getTime() / 1000)
     const lastBlockTime = ts - ts % BLOCK_INTERVAL
 
-    account.energy = account.energy + account.balance * BigInt(lastBlockTime - account.blockTime) * ENERGY_GROWTH_RATE/BigInt(1e18)
-    
+    account.energy = account.energy + account.balance * BigInt(lastBlockTime - account.blockTime) * ENERGY_GROWTH_RATE / BigInt(1e18)
+
     res.json({
         account: {
             ...account,
             blockTime: undefined,
             firstSeen: undefined,
             alias: undefined
-        } ,
+        },
         tokens,
-        authority: authority ? {...authority, id: undefined} : null
+        authority: authority ? { ...authority, id: undefined } : null
     })
 }))
 
@@ -64,7 +63,7 @@ router.get('/:address/transactions', try$(async (req, res) => {
     const offset = req.query.offset ? parseOffset(req.query.offset) : 0
     const limit = req.query.limit ? parseLimit(req.query.limit) : DEFAULT_LIMIT
 
-    let type: MoveType|null = null
+    let type: MoveType | null = null
     if (req.query.type) {
         if (['In', 'Out'].indexOf(req.query.type) === -1) {
             throw new HttpError(400, 'invalid type')
@@ -79,7 +78,7 @@ router.get('/:address/transactions', try$(async (req, res) => {
         }
         const raw = await getAccountTransaction(addr, offset, limit)
         const txs = raw.map(x => {
-            const tx=x.transaction
+            const tx = x.transaction
             return {
                 txID: x.txID,
                 chainTag: tx.chainTag,
@@ -110,9 +109,9 @@ router.get('/:address/transactions', try$(async (req, res) => {
         if (!count || count <= offset) {
             return res.json({ count, txs: [] })
         }
-        const raw = await getAccountTransactionByType(addr, type,offset, limit)
+        const raw = await getAccountTransactionByType(addr, type, offset, limit)
         const txs = raw.map(x => {
-            const tx=x.transaction
+            const tx = x.transaction
             return {
                 txID: x.txID,
                 chainTag: tx.chainTag,
@@ -149,7 +148,7 @@ router.get('/:address/transfers', try$(async (req, res) => {
     const offset = req.query.offset ? parseOffset(req.query.offset) : 0
     const limit = req.query.limit ? parseLimit(req.query.limit) : DEFAULT_LIMIT
 
-    let asset: AssetType|null = null
+    let asset: AssetType | null = null
     if (req.query.asset) {
         const ass = normalizeAsset(req.query.asset)
         if (!ass) {
@@ -161,7 +160,7 @@ router.get('/:address/transfers', try$(async (req, res) => {
     if (asset === null) {
         const count = await countAccountTransfer(addr)
         if (!count || count <= offset) {
-            return res.json({count, transfers:[]})
+            return res.json({ count, transfers: [] })
         }
         const raw = await getAccountTransfer(addr, offset, limit)
         const transfers = raw.map(x => {
@@ -176,17 +175,17 @@ router.get('/:address/transfers', try$(async (req, res) => {
                 },
                 asset: undefined,
                 type: undefined,
-                moveIndex:undefined,
+                moveIndex: undefined,
                 block: undefined,
                 blockID: undefined,
                 id: undefined
             }
         })
-        res.json({count,transfers})
+        res.json({ count, transfers })
     } else {
         const count = await countAccountTransferByAsset(addr, asset)
         if (!count || count <= offset) {
-            return res.json({count, transfers:[]})
+            return res.json({ count, transfers: [] })
         }
         const raw = await getAccountTransferByAsset(addr, asset, offset, limit)
         const transfers = raw.map(x => {
@@ -200,14 +199,14 @@ router.get('/:address/transfers', try$(async (req, res) => {
                     ...x.seq.moveIndex
                 },
                 asset: undefined,
-                type:undefined,
+                type: undefined,
                 moveIndex: undefined,
-                block:undefined,
+                block: undefined,
                 blockID: undefined,
                 id: undefined
             }
         })
-        res.json({count,transfers})
+        res.json({ count, transfers })
     }
 }))
 
@@ -221,14 +220,14 @@ router.get('/:address/signed', try$(async (req, res) => {
 
     const auth = await getAuthority(addr)
     if (!auth) {
-        return res.json({count:0, blocks:[]})
+        return res.json({ count: 0, blocks: [] })
     }
 
     const count = auth.signed
     if (!count || count <= offset) {
-        return res.json({count, blocks:[]})
+        return res.json({ count, blocks: [] })
     }
     const blocks = await getSignedBlocks(addr, offset, limit)
 
-    res.json({count, blocks})
+    res.json({ count, blocks })
 }))

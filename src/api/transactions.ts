@@ -1,6 +1,6 @@
 import { Router } from 'express'
 import { try$, HttpError } from 'express-toolbox'
-import { isHexBytes, isUInt } from '../validator'
+import { isHexBytes, isUInt } from '../utils'
 import { AssetType } from '../explorer-db/types'
 import { getRecentTransactions, getTransaction } from '../db-service/transaction'
 import { getTransferByTX } from '../db-service/transfer'

@@ -1,6 +1,6 @@
 import { Router } from 'express'
 import { try$, HttpError } from 'express-toolbox'
-import { isHexBytes, isDate } from '../validator'
+import { isHexBytes, isDate } from '../utils'
 import { getBlockByTime } from '../db-service/block'
 import { getAccountTransferByRange } from '../db-service/transfer'
 import { AssetType, MoveType } from '../explorer-db/types'
