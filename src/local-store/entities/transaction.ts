@@ -10,6 +10,9 @@ export class Transaction {
     @Column('simple-json')
     public body!: PendingTransaction
 
+    @Column({ type: 'varchar', nullable: true })
+    public state!: string
+
     @CreateDateColumn()
     public createdAt!: Date;
 }
