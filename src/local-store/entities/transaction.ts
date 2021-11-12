@@ -8,7 +8,7 @@ export class Transaction {
     public txID!: string
 
     @Column('simple-json')
-    public body!: PendingTransaction
+    public body!: Omit<PendingTransaction, 'meta'>
 
     @Column({ type: 'varchar', nullable: true })
     public state!: string

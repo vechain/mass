@@ -6,7 +6,7 @@ import { getBest } from './block'
 import { isNonReversible } from './cache'
 import { getTransaction } from './transaction'
 
-type PendingTransactionWithState = thor.PendingTransaction & { state: string }
+type PendingTransactionWithState = Omit<thor.PendingTransaction, 'meta'> & { state: string }
 enum PendingState {
     PENDING = 'PENDING',
     EXPIRED = 'EXPIRED',
@@ -40,13 +40,17 @@ export const getPending = async (txID: string): Promise<PendingTransactionWithSt
     if(!tx){
         const t2 = await thor.getPendingTx(txID)
         if (t2) {
+            // omit 'meta' from tx
+            // if meta was not null, means tx is packed but not loaded to db
+            // in that case, consider it's still pending, in db's view
+            const {meta, ...t3} = t2
             await repo.insert({
                 txID,
-                body: t2,
+                body: t3,
                 state: PendingState.PENDING
             })
 
-            tx = { ...t2, state: PendingState.PENDING }
+            tx = { ...t3, state: PendingState.PENDING }
             cache.set(txID, tx)
             return tx
         }
