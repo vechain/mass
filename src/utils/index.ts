@@ -9,7 +9,7 @@ export const BLOCK_INTERVAL = 10
 export const REVERSIBLE_WINDOW = 12
 export const ENERGY_GROWTH_RATE = BigInt(5000000000)
 
-const AssetLiterals = ['VET', 'VTHO', 'PLA', 'SHA', 'EHrT', 'DBET', 'TIC', 'OCE', 'SNK', 'JUR', 'AQD', 'YEET', 'HAI', 'MDN', 'VEED', 'VPU']
+const AssetLiterals = ['VET', 'VTHO', 'PLA', 'SHA', 'EHrT', 'DBET', 'TIC', 'OCE', 'SNK', 'JUR', 'AQD', 'YEET', 'HAI', 'MDN', 'VEED', 'VPU', 'MVG', 'WoV', 'GEMS', 'VEX']
 const AssetMap = new Map<string, string>()
 for (let asset of AssetLiterals) {
     AssetMap.set(asset.toLowerCase(), asset)
