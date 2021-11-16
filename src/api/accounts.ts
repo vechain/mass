@@ -35,7 +35,9 @@ router.get('/:address', try$(async (req, res) => {
     }
     const tokens: Array<{ symbol: string, balance: bigint }> = []
     for (let x of t) {
-        tokens.push({ symbol: AssetType[x.type], balance: x.balance })
+        if (AssetType[x.type]) {
+            tokens.push({ symbol: AssetType[x.type], balance: x.balance })
+        }   
     }
 
     const ts = Math.floor(new Date().getTime() / 1000)
