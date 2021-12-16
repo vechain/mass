@@ -3,7 +3,7 @@ import { try$, HttpError } from 'express-toolbox'
 import { getAccount, getTokenBalance } from '../db-service/account'
 import { getAuthority, getSignedBlocks } from '../db-service/authority'
 import { AssetType, MoveType } from '../explorer-db/types'
-import { parseOffset, parseLimit, DEFAULT_LIMIT, BLOCK_INTERVAL, ENERGY_GROWTH_RATE, normalizeAsset, isHexBytes } from '../utils'
+import { parseOffset, parseLimit, DEFAULT_LIMIT, BLOCK_INTERVAL, ENERGY_GROWTH_RATE, normalizeAsset, isHexBytes, getToken } from '../utils'
 import { countAccountTransaction, getAccountTransaction, countAccountTransactionByType, getAccountTransactionByType } from '../db-service/transaction'
 import { countAccountTransfer, getAccountTransfer, countAccountTransferByAsset, getAccountTransferByAsset } from '../db-service/transfer'
 
@@ -15,9 +15,16 @@ router.get('/:address', try$(async (req, res) => {
         throw new HttpError(400, 'invalid address')
     }
     const addr = req.params.address
-    let account = await getAccount(addr)
-    const t = await getTokenBalance(addr)
-    const authority = await getAuthority(addr)
+    let [
+        account,
+        tokenBalance,
+        authority
+    ] = await Promise.all([
+        getAccount(addr),
+        getTokenBalance(addr),
+        getAuthority(addr)
+    ])
+
     if (!account) {
         account = {
             address: addr,
@@ -33,11 +40,11 @@ router.get('/:address', try$(async (req, res) => {
             deployer: null,
         }
     }
-    const tokens: Array<{ symbol: string, balance: bigint }> = []
-    for (let x of t) {
+    const tokens: Array<{ symbol: string, balance: bigint, decimals: number }> = []
+    for (let x of tokenBalance!) {
         if (AssetType[x.type]) {
-            tokens.push({ symbol: AssetType[x.type], balance: x.balance })
-        }   
+            tokens.push({ symbol: AssetType[x.type], balance: x.balance, ...getToken(AssetType[x.type] as keyof typeof AssetType)})
+        }
     }
 
     const ts = Math.floor(new Date().getTime() / 1000)
@@ -169,6 +176,7 @@ router.get('/:address/transfers', try$(async (req, res) => {
             return {
                 ...x.movement,
                 symbol: AssetType[x.asset],
+                ...getToken(AssetType[x.asset] as keyof typeof AssetType),
                 meta: {
                     blockID: x.movement.blockID,
                     blockNumber: x.movement.block.number,
@@ -194,6 +202,7 @@ router.get('/:address/transfers', try$(async (req, res) => {
             return {
                 ...x.movement,
                 symbol: AssetType[x.asset],
+                ...getToken(AssetType[x.asset] as keyof typeof AssetType),
                 meta: {
                     blockID: x.movement.blockID,
                     blockNumber: x.movement.block.number,

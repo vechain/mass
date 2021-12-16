@@ -1,6 +1,7 @@
 import { HttpError } from 'express-toolbox'
 import { isUInt } from './validator'
 export * from './validator'
+export * from './tokens'
 
 export const MAX_LIMIT = 50
 export const MAX_OFFSET = 50000
@@ -8,12 +9,6 @@ export const DEFAULT_LIMIT = 20
 export const BLOCK_INTERVAL = 10
 export const REVERSIBLE_WINDOW = 12
 export const ENERGY_GROWTH_RATE = BigInt(5000000000)
-
-const AssetLiterals = ['VET', 'VTHO', 'PLA', 'SHA', 'EHrT', 'DBET', 'TIC', 'OCE', 'SNK', 'JUR', 'AQD', 'YEET', 'HAI', 'MDN', 'VEED', 'VPU', 'MVG', 'WoV', 'GEMS', 'VEX']
-const AssetMap = new Map<string, string>()
-for (let asset of AssetLiterals) {
-    AssetMap.set(asset.toLowerCase(), asset)
-}
 
 export const parseLimit = (limit: string, maximum = MAX_LIMIT): number => {
     const num = parseInt(limit)
@@ -61,12 +56,4 @@ export const hexToBuffer = (val: string) => {
     }
 
     return Buffer.from(sanitizeHex(val), 'hex')
-}
-
-export const normalizeAsset = (asset: string): string | null => {
-    const key = asset.toLowerCase()
-    if (AssetMap.has(key)) {
-        return AssetMap.get(key)!
-    } 
-    return null
 }
