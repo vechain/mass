@@ -7,7 +7,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "serve": "ts-node src/index.ts",
     "build": "rm -fr dist && tsc -p .",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "pull-token": "ts-node src/utils/load-token.ts"
   },
   "author": "",
   "license": "LGPL-3.0",
