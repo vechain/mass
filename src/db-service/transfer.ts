@@ -3,8 +3,8 @@ import { keys, cache, isNonReversible, agedCache } from './cache'
 import { blockIDtoNum } from '../utils'
 import { AssetMovement } from '../explorer-db/entity/movement'
 import { AggregatedMovement } from '../explorer-db/entity/aggregated-move'
-import { AssetType } from '../explorer-db/types'
 import { TransactionMeta } from '../explorer-db/entity/tx-meta'
+import { AssetType } from '../types'
 
 export const getRecentTransfers = (limit: number) => {
     return getConnection()
