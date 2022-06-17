@@ -2,7 +2,7 @@ import { Router } from 'express'
 import { try$, HttpError } from 'express-toolbox'
 import { isUInt } from '../utils'
 import { getRecentTransfers } from '../db-service/transfer'
-import { AssetType } from '../explorer-db/types'
+import { AssetType } from '../types'
 
 const router = Router()
 export = router
@@ -18,7 +18,9 @@ router.get('/recent', try$(async (req, res) => {
     }
     const raw = await getRecentTransfers(limit)
 
-    const transfers = raw.map(x => {
+    const transfers = raw.filter(x => {
+        return !!AssetType[x.asset]
+    }).map(x => {
         return {
             ...x,
             symbol: AssetType[x.asset],
