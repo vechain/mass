@@ -4,6 +4,7 @@ import { hang, HttpError } from 'express-toolbox'
 import { getConnectionOptions, createConnection } from 'typeorm'
 import { getBest } from './db-service/block'
 import { initLocalStore } from './local-store'
+import { checkAssetTypeWithDB } from './utils'
 
 export const app = Express()
 
@@ -11,7 +12,8 @@ hang(app).until(async () => {
     await initLocalStore()
     
     const opt = await getConnectionOptions()
-    await createConnection(Object.assign({}, opt, { synchronize: false, logging: false }))
+    await createConnection(Object.assign({}, opt, { synchronize: false, logging: true }))
+    await checkAssetTypeWithDB()
     await getBest()
 })
 

@@ -1,4 +1,7 @@
 import { HttpError } from 'express-toolbox'
+import { getConnection } from 'typeorm'
+import { Config } from '../explorer-db/entity/config'
+import { AssetType } from '../types'
 import { isUInt } from './validator'
 export * from './validator'
 export * from './asset'
@@ -56,4 +59,36 @@ export const hexToBuffer = (val: string) => {
     }
 
     return Buffer.from(sanitizeHex(val), 'hex')
+}
+
+// check supported assets with tasks in DB to avoid unknown transfer
+export const checkAssetTypeWithDB = async () => {
+    const AssetLiterals = Object.keys(AssetType).filter(x => x !== parseFloat(x).toString())
+
+    const heads = await getConnection()
+        .getRepository(Config)
+        .find()
+    
+    const tokens:string[] = []
+    for (const head of heads) {
+        if (head.key.indexOf('token') === 0) {
+            const symbol = head.key.split('-')[1]
+            if (!AssetLiterals.includes(symbol)) {
+                throw new Error(`unknown token: ${symbol} in DB`)
+            }
+            tokens.push(symbol)
+        }
+    }
+
+    if (tokens.length != AssetLiterals.length - 2) {
+        for (const asset of AssetLiterals) {
+            if (asset === 'VET' || asset === 'VTHO') {
+                continue
+            }
+            if (!tokens.includes(asset)) {
+                throw new Error(`unknown token: ${asset} in AssetType`)
+            }
+        }
+    }
+
 }
