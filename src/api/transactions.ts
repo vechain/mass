@@ -1,6 +1,6 @@
 import { Router } from 'express'
 import { try$, HttpError } from 'express-toolbox'
-import { getTokenDecimals, isHexBytes, isUInt } from '../utils'
+import { getAssetDecimals, isHexBytes, isUInt } from '../utils'
 import { getRecentTransactions, getTransaction } from '../db-service/transaction'
 import { getTransferByTX } from '../db-service/transfer'
 import { getPending } from '../db-service/pending'
@@ -62,7 +62,7 @@ router.get('/:txid', try$(async (req, res) => {
             return {
                 ...x,
                 symbol: AssetType[x.asset],
-                decimals: getTokenDecimals(AssetType[x.asset] as keyof typeof AssetType),
+                decimals: getAssetDecimals(AssetType[x.asset] as keyof typeof AssetType),
                 meta: { ...x.moveIndex },
                 moveIndex: undefined,
                 asset: undefined,

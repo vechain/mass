@@ -3,7 +3,7 @@ import { try$, HttpError } from 'express-toolbox'
 import { getAccount, getTokenBalance } from '../db-service/account'
 import { getAuthority, getSignedBlocks } from '../db-service/authority'
 import { MoveType } from '../explorer-db/types'
-import { parseOffset, parseLimit, DEFAULT_LIMIT, BLOCK_INTERVAL, ENERGY_GROWTH_RATE, normalizeAsset, isHexBytes, getTokenDecimals } from '../utils'
+import { parseOffset, parseLimit, DEFAULT_LIMIT, BLOCK_INTERVAL, ENERGY_GROWTH_RATE, normalizeAsset, isHexBytes, getAssetDecimals } from '../utils'
 import { countAccountTransaction, getAccountTransaction, countAccountTransactionByType, getAccountTransactionByType } from '../db-service/transaction'
 import { countAccountTransfer, getAccountTransfer, countAccountTransferByAsset, getAccountTransferByAsset } from '../db-service/transfer'
 import { AssetType } from '../types'
@@ -44,7 +44,7 @@ router.get('/:address', try$(async (req, res) => {
     const tokens: Array<{ symbol: string, balance: bigint, decimals: number }> = []
     for (let x of tokenBalance!) {
         if (AssetType[x.type]) {
-            tokens.push({ symbol: AssetType[x.type], balance: x.balance, decimals: getTokenDecimals(AssetType[x.type] as keyof typeof AssetType)})
+            tokens.push({ symbol: AssetType[x.type], balance: x.balance, decimals: getAssetDecimals(AssetType[x.type] as keyof typeof AssetType)})
         }
     }
 
@@ -179,7 +179,7 @@ router.get('/:address/transfers', try$(async (req, res) => {
             return {
                 ...x.movement,
                 symbol: AssetType[x.asset],
-                decimals: getTokenDecimals(AssetType[x.asset] as keyof typeof AssetType),
+                decimals: getAssetDecimals(AssetType[x.asset] as keyof typeof AssetType),
                 meta: {
                     blockID: x.movement.blockID,
                     blockNumber: x.movement.block.number,
@@ -205,7 +205,7 @@ router.get('/:address/transfers', try$(async (req, res) => {
             return {
                 ...x.movement,
                 symbol: AssetType[x.asset],
-                decimals: getTokenDecimals(AssetType[x.asset] as keyof typeof AssetType),
+                decimals: getAssetDecimals(AssetType[x.asset] as keyof typeof AssetType),
                 meta: {
                     blockID: x.movement.blockID,
                     blockNumber: x.movement.block.number,

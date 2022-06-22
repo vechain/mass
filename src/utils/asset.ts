@@ -17,6 +17,10 @@ export const normalizeAsset = (asset: string): string | null => {
     return null
 }
 
-export const getTokenDecimals = (symbol: keyof typeof AssetType):number => {
+export const getAssetDecimals = (symbol: keyof typeof AssetType): number => {
+    if (symbol === 'VET' || symbol === 'VTHO') {
+        return 18
+    }
+
     return tokens[symbol].decimals
 }

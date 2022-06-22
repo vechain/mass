@@ -1,6 +1,6 @@
 import { Router } from 'express'
 import { try$, HttpError } from 'express-toolbox'
-import { isHexBytes, isDate, getTokenDecimals } from '../utils'
+import { isHexBytes, isDate, getAssetDecimals } from '../utils'
 import { getBlockByTime } from '../db-service/block'
 import { getAccountTransferByRange } from '../db-service/transfer'
 import { MoveType } from '../explorer-db/types'
@@ -41,7 +41,7 @@ router.post('/transfers/:address', try$(async (req, res) => {
         if (tr.asset === AssetType.VET || tr.asset === AssetType.VTHO) {
             decimals = 18
         } else {
-            decimals = getTokenDecimals(AssetType[tr.asset] as keyof typeof AssetType)
+            decimals = getAssetDecimals(AssetType[tr.asset] as keyof typeof AssetType)
         }
         return new BigNumber(tr.movement.amount.toString()).div(new BigNumber(10).pow(decimals)).toString()
     }

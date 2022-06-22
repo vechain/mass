@@ -1,7 +1,7 @@
 import { HttpError } from 'express-toolbox'
 import { isUInt } from './validator'
 export * from './validator'
-export * from './tokens'
+export * from './asset'
 
 export const MAX_LIMIT = 50
 export const MAX_OFFSET = 50000
