@@ -1,10 +1,14 @@
-import { getConnection, In, Between } from 'typeorm'
+import { getConnection, In, Between, MoreThanOrEqual } from 'typeorm'
 import { keys, cache, isNonReversible, agedCache } from './cache'
 import { blockIDtoNum } from '../utils'
 import { AssetMovement } from '../explorer-db/entity/movement'
 import { AggregatedMovement } from '../explorer-db/entity/aggregated-move'
 import { TransactionMeta } from '../explorer-db/entity/tx-meta'
 import { AssetType } from '../types'
+import { Counts } from '../explorer-db/entity/counts'
+import { CountType } from '../explorer-db/types'
+
+const maxAsset = Object.keys(AssetType).filter(x => x === parseInt(x).toString()).map(x => parseInt(x)).reduce((prev, curr) => prev > curr ? prev : curr)
 
 export const getRecentTransfers = (limit: number) => {
     return getConnection()
@@ -37,18 +41,17 @@ export const getTransferByTX = async (tx: TransactionMeta) => {
 }
 
 export const countAccountTransfer = async (addr: string) => {
-    const key = keys.TRANSFER_COUNT(addr, 'ALL')
-    if (agedCache.has(key)) {
-        return agedCache.get(key) as number
+    let count = 0
+    const list = await getConnection()
+        .getRepository(Counts)
+        .find({ address: addr, type: MoreThanOrEqual(CountType.Transfer) })
+
+    for (const item of list) {
+        if (item.type <= CountType.Transfer + maxAsset) {
+            count += (item.in + item.out + item.self)
+        }
     }
 
-    const count = await getConnection()
-        .getRepository(AggregatedMovement)
-        .count({ participant: addr })
-
-    if (count >= 50000) {
-        agedCache.set(key, count)
-    }
     return count
 }
 
@@ -81,20 +84,15 @@ export const getAccountTransfer = async (addr: string, offset: number, limit: nu
 }
 
 export const countAccountTransferByAsset = async (addr: string, asset: AssetType) => {
-    const key = keys.TRANSFER_COUNT(addr, AssetType[asset])
-    if (agedCache.has(key)) {
-        return agedCache.get(key) as number
-    }
-
     const count = await getConnection()
-        .getRepository(AggregatedMovement)
-        .count({ participant: addr, asset })
+        .getRepository(Counts)
+        .findOne({ address: addr, type: CountType.Transfer + asset })
 
-    if (count >= 50000) {
-        agedCache.set(key, count)
+    if (!count) {
+        return 0
     }
 
-    return count
+    return count.in + count.out + count.self
 }
 
 export const getAccountTransferByAsset = async (
