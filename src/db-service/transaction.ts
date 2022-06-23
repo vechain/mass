@@ -1,9 +1,10 @@
 import { getConnection, In } from 'typeorm'
-import { agedCache, cache, isNonReversible, keys } from './cache'
+import { cache, isNonReversible, keys } from './cache'
 import { blockIDtoNum } from '../utils'
 import { AggregatedTransaction } from '../explorer-db/entity/aggregated-tx'
-import { MoveType } from '../explorer-db/types'
+import { CountType, MoveType } from '../explorer-db/types'
 import { TransactionMeta } from '../explorer-db/entity/tx-meta'
+import { Counts } from '../explorer-db/entity/counts'
 
 export const getTransaction = async (txID: string) => {
     const key = keys.TX(txID)
@@ -53,19 +54,15 @@ export const getRecentTransactions = async (limit: number) => {
 }
 
 export const countAccountTransaction = async (addr: string) => {
-    const key = keys.TX_COUNT(addr, 'ALL')
-    if (agedCache.has(key)) {
-        return agedCache.get(key) as number
-    }
-
     const count = await getConnection()
-        .getRepository(AggregatedTransaction)
-        .count({ participant: addr })
+        .getRepository(Counts)
+        .findOne({ type: CountType.TX, address: addr })
 
-    if (count >= 50000) {
-        agedCache.set(key, count)
+    if (!count) {
+        return 0
     }
-    return count
+
+    return count.in + count.out + count.self
 }
 
 export const getAccountTransaction = async (addr: string, offset: number, limit: number) => {
@@ -93,19 +90,15 @@ export const getAccountTransaction = async (addr: string, offset: number, limit:
 }
 
 export const countAccountTransactionByType = async (addr: string, type: MoveType) => {
-    const key = keys.TX_COUNT(addr, MoveType[type])
-    if (agedCache.has(key)) {
-        return agedCache.get(key) as number
+    const count = await getConnection()
+        .getRepository(Counts)
+        .findOne({ type: CountType.TX, address: addr })
+
+    if (!count) {
+        return 0
     }
 
-    const count = await getConnection()
-        .getRepository(AggregatedTransaction)
-        .count({ participant: addr, type: In([MoveType.Self, type]) })
-    
-    if (count >= 50000) {
-        agedCache.set(key, count)
-    }
-    return count
+    return (type === MoveType.In ? count.in : count.out) + count.self
 }
 
 export const getAccountTransactionByType = async (
