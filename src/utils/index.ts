@@ -80,15 +80,19 @@ export const checkAssetTypeWithDB = async () => {
         }
     }
 
+    const unSeen = []
     if (tokens.length != AssetLiterals.length - 2) {
         for (const asset of AssetLiterals) {
             if (asset === 'VET' || asset === 'VTHO') {
                 continue
             }
             if (!tokens.includes(asset)) {
-                throw new Error(`unknown token: ${asset} in AssetType`)
+                unSeen.push(asset)
             }
         }
+    }
+    if (unSeen.length) {
+        console.log('No tasks for tokens: '+unSeen.join(', '))
     }
 
 }
