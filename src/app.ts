@@ -12,7 +12,7 @@ hang(app).until(async () => {
     await initLocalStore()
     
     const opt = await getConnectionOptions()
-    await createConnection(Object.assign({}, opt, { synchronize: false, logging: true }))
+    await createConnection(Object.assign({}, opt, { synchronize: false, logging: false }))
     await checkAssetTypeWithDB()
     await getBest()
 })
