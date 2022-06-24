@@ -24,7 +24,8 @@ router.get('/tokens', try$(async (req, res) => {
             if (!!lastUpdated) {
                 res.json(lastUpdated)
             } else {
-                throw new HttpError(500, 'failed to get registry')
+                console.warn('registry: get token failed')
+                res.json([])
             }
         }        
     }
@@ -45,7 +46,15 @@ router.get('/price', try$(async (req, res) => {
             if (!!lastUpdated) {
                 res.json(lastUpdated)
             } else {
-                throw new HttpError(500, 'failed to get registry')
+                console.warn('registry: get price failed')
+                res.json({
+                    'vechain': {
+                        btc: 0
+                    },
+                    'vethor-token': {
+                        btc:0
+                    }
+                })
             }
         }        
     }
