@@ -24,7 +24,9 @@ export const getTransaction = async (txID: string) => {
     }
 
     if (isNonReversible(blockIDtoNum(tx.blockID))) {
-        cache.set(key, tx)
+        if (tx.transaction.reverted === false || (tx.transaction.reverted && tx.transaction.vmError !== null)) {
+            cache.set(key, tx)    
+        }
     }
     return tx
 }
