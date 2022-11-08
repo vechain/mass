@@ -1,5 +1,5 @@
 import { getForkConfig, Network } from '../config'
-import { getFinalizedBlock } from '../thor';
+import * as thor from '../thor';
 import { blockIDtoNum } from '../utils'
 import { getBest } from './block'
 
@@ -27,6 +27,32 @@ const toCheckpoint = (input: number) => {
     return Math.floor(input / checkpointInterval) * checkpointInterval
 }
 
+export const getFinalized = async (bestNum: number) => {
+    if (bestNum < forkConfig.VIP220) {
+        return network
+    }
+
+    const checkpoint = toCheckpoint(bestNum)
+    const cached = checkpointToFinalized.get(checkpoint)
+    if (!cached || (bestNum + 1) % checkpointInterval === 0) {
+        const finalized = await thor.getFinalizedBlock()
+
+        // explorer is syncing, return genesis
+        if (finalized.number >= bestNum) {
+            return network
+        }
+
+        if ((bestNum + 1) % checkpointInterval === 0) {
+            checkpointToFinalized.set(checkpoint + checkpointInterval, finalized.id)
+        } else {
+            checkpointToFinalized.set(checkpoint, finalized.id)
+        }
+        return finalized.id
+    } else {
+        return cached
+    }
+}
+
 export const getStatus = async () => {
     const best = await getBest()
 
@@ -40,20 +66,7 @@ export const getStatus = async () => {
                 status.voting = toCheckpoint(bestNum)
             }
         }
-
-        const cached = checkpointToFinalized.get(status.voting)
-        if (!cached || (bestNum + 1) % checkpointInterval === 0) {
-            const finalized = await getFinalizedBlock()
-            status.finalized = finalized.id
-            if ((bestNum + 1) % checkpointInterval === 0) {
-                checkpointToFinalized.set(status.voting + checkpointInterval, status.finalized)
-            } else {
-                checkpointToFinalized.set(status.voting, status.finalized)
-            }
-        } else {
-            status.finalized = cached
-        }
-
+        status.finalized = await getFinalized(best.number)
         status.processing = []
         if (status.voting > forkConfig.VIP220) {
             let start = blockIDtoNum(status.finalized)

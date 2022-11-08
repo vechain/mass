@@ -44,4 +44,5 @@ export type PendingTransaction = {
 
 export type Block = {
     id: string;
+    number: number;
 }
