@@ -2,7 +2,8 @@ import { Router } from 'express'
 import { try$, HttpError } from 'express-toolbox'
 import { Block } from '../explorer-db/entity/block'
 import { getBest, getBlockByID, getBlockTransactions, getRecentBlocks, getBlockNeighbourInTrunk, getBlockByNumber, getBranchBlockTransactions } from '../db-service/block'
-import { parseLimit, DEFAULT_LIMIT, isHexBytes, isUInt } from '../utils'
+import { parseLimit, DEFAULT_LIMIT, isHexBytes, isUInt, blockIDtoNum } from '../utils'
+import { getFinalized } from '../db-service/chain'
 
 const router = Router()
 export = router
@@ -16,11 +17,11 @@ router.get('/recent', try$(async (req, res) => {
 
 router.get('/best', try$(async (req, res) => {
     const best = await getBest()
-    res.json({block:best, prev: best.parentID, next:null})
+    res.json({ block: { ...best, isFinalized: false }, prev: best.parentID, next:null})
 }))
 
 router.get('/:revision', try$(async (req, res) => {
-    let b: {block: Block, prev: string|null, next: string|null}
+    let b: { block: Block & { isFinalized: boolean }, prev: string | null, next: string | null }
     if (req.params.revision.startsWith('0x')) {
         if (!isHexBytes(req.params.revision, 32)) {
             throw new HttpError(400, 'invalid revision: bytes32 or number or best required')
@@ -30,7 +31,7 @@ router.get('/:revision', try$(async (req, res) => {
             return res.json({ block: null, prev: null, next: null })
         }
         const nei = await getBlockNeighbourInTrunk(ret.number)
-        b = { block: ret, prev:nei.prev, next:nei.next }
+        b = { block: {...ret, isFinalized:false }, prev:nei.prev, next:nei.next }
     } else {
         const num = parseInt(req.params.revision)
         if (isNaN(num) || !isUInt(num)) {
@@ -41,7 +42,14 @@ router.get('/:revision', try$(async (req, res) => {
             return res.json({ block: null, prev: null, next: null })
         }
         const nei = await getBlockNeighbourInTrunk(ret.number)
-        b =  { block: ret, prev:nei.prev, next:nei.next }
+        b =  { block: {...ret, isFinalized:false }, prev:nei.prev, next:nei.next }
+    }
+
+    if (b.block.isTrunk) {
+        const finalized = await getFinalized((await getBest()).number)
+        if (blockIDtoNum(finalized) >= b.block.number) {
+            b.block.isFinalized = true
+        }
     }
     res.json(b)
 }))
