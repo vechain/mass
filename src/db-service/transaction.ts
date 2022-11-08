@@ -31,6 +31,7 @@ export const getTransaction = async (txID: string) => {
     return tx
 }
 
+// limited the properties selected, only for /chain/summary
 export const getRecentTransactions = async (limit: number) => {
     const conn = getConnection()
     const ids = await conn
@@ -52,7 +53,21 @@ export const getRecentTransactions = async (limit: number) => {
             order: { seq: 'DESC' },
             relations: ['transaction', 'block']
         })
-    return txs
+
+    return txs.map(x => {
+        const tx = x.transaction
+        return {
+            txID: x.txID,
+            origin: tx.origin,
+            clauses: tx.clauses,
+            receipt: {
+                reverted: tx.reverted
+            },
+            meta: {
+                blockTimestamp: x.block.timestamp,
+            }
+        }
+    })
 }
 
 export const countAccountTransaction = async (addr: string) => {

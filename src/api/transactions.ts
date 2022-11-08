@@ -18,33 +18,7 @@ router.get('/recent', try$(async (req, res) => {
         }
         limit = num
     }
-    const raw = await getRecentTransactions(limit)
-    const txs = raw.map(x => {
-        const tx = x.transaction
-        return {
-            txID: x.txID,
-            chainTag: tx.chainTag,
-            blockRef: tx.blockRef,
-            expiration: tx.expiration,
-            gasPriceCoef: tx.gasPriceCoef,
-            gas: tx.gas,
-            nonce: tx.nonce,
-            dependsOn: tx.dependsOn,
-            origin: tx.origin,
-            delegator: tx.delegator,
-            clauses: tx.clauses,
-            size: tx.size,
-            receipt: {
-                reverted: tx.reverted
-            },
-            meta: {
-                blockID: x.blockID,
-                blockNumber: x.block.number,
-                blockTimestamp: x.block.timestamp,
-                txIndex: x.seq.txIndex
-            }
-        }
-    })
+    const txs = await getRecentTransactions(limit)
     res.json({ txs })
 }))
 

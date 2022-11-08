@@ -34,12 +34,14 @@ export const getBest = async () => {
     return b 
 }
 
+// limited the properties selected, only for /chain/summary
 export const getRecentBlocks = (limit: number) => {
     return getConnection()
         .getRepository(Block)
         .find({
             where: { isTrunk: true },
             order: { id: 'DESC' },
+            select: ['number', 'id', 'signer', 'gasUsed', 'gasLimit', 'txCount', 'timestamp'], 
             take: limit
         })
 }
