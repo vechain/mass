@@ -25,7 +25,7 @@ export const getTransaction = async (txID: string) => {
 
     if (isNonReversible(blockIDtoNum(tx.blockID))) {
         if (tx.transaction.reverted === false || (tx.transaction.reverted && tx.transaction.vmError !== null)) {
-            cache.set(key, tx)    
+            cache.set(key, tx)
         }
     }
     return tx
@@ -55,17 +55,12 @@ export const getRecentTransactions = async (limit: number) => {
         })
 
     return txs.map(x => {
-        const tx = x.transaction
         return {
             txID: x.txID,
-            origin: tx.origin,
-            clauses: tx.clauses,
-            receipt: {
-                reverted: tx.reverted
-            },
-            meta: {
-                blockTimestamp: x.block.timestamp,
-            }
+            origin: x.transaction.origin,
+            totalValue: x.transaction.clauses.reduce((prev, current) => { return prev + BigInt(current.value) }, BigInt(0)),
+            reverted: x.transaction.reverted,
+            timestamp: x.block.timestamp
         }
     })
 }
