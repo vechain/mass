@@ -53,11 +53,9 @@ export const getFinalized = async (bestNum: number) => {
     }
 }
 
-export const getStatus = async () => {
-    const best = await getBest()
-
-    if (status.best != best.id) {
-        status.best = best.id
+export const getStatus = async (best:string) => {
+    if (status.best != best) {
+        status.best = best
         const bestNum = blockIDtoNum(status.best)
         if (bestNum >= status.voting + checkpointInterval) {
             if (bestNum < forkConfig.VIP220) {
@@ -66,7 +64,7 @@ export const getStatus = async () => {
                 status.voting = toCheckpoint(bestNum)
             }
         }
-        status.finalized = await getFinalized(best.number)
+        status.finalized = await getFinalized(bestNum)
         status.processing = []
         if (status.voting > forkConfig.VIP220) {
             let start = blockIDtoNum(status.finalized)
