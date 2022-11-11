@@ -6,12 +6,12 @@ import { TransactionMeta } from '../explorer-db/entity/tx-meta'
 import { BranchTransaction } from '../explorer-db/entity/branch-transaction'
 
 const now = () => {
-    return Math.floor(new Date().getTime()/1000)
+    return Math.floor(new Date().getTime() / 1000)
 }
 
 export interface Neighbour {
-    prev: string|null
-    next: string|null
+    prev: string | null
+    next: string | null
 }
 
 export const getBest = async () => {
@@ -22,16 +22,16 @@ export const getBest = async () => {
         .getRepository(Block)
         .findOne({
             where: { isTrunk: true },
-            order: {id: 'DESC'}
+            order: { id: 'DESC' }
         }))!
-    
+
     const gap = now() - b.timestamp
-    if (gap >= 0 && gap < BLOCK_INTERVAL) {
-        cache.set(keys.BEST, b, (BLOCK_INTERVAL-gap)*1000)
+    if (gap >= 0 && gap < BLOCK_INTERVAL - 1) {
+        cache.set(keys.BEST, b, (BLOCK_INTERVAL - gap - 1) * 1000)
     }
     cache.set(keys.LATEST, b.number)
 
-    return b 
+    return b
 }
 
 // limited the properties selected, only for /chain/summary
@@ -41,7 +41,7 @@ export const getRecentBlocks = (limit: number) => {
         .find({
             where: { isTrunk: true },
             order: { id: 'DESC' },
-            select: ['number', 'id', 'signer', 'gasUsed', 'gasLimit', 'txCount', 'timestamp'], 
+            select: ['number', 'id', 'signer', 'gasUsed', 'gasLimit', 'txCount', 'timestamp'],
             take: limit
         })
 }
@@ -55,7 +55,7 @@ export const getBlockByID = async (blockID: string) => {
     const b = await getConnection()
         .getRepository(Block)
         .findOne({ id: blockID })
-    
+
     if (!b) {
         return b
     }
@@ -78,16 +78,16 @@ export const getBlockByNumber = async (num: number) => {
     const b = await getConnection()
         .getRepository(Block)
         .findOne({ number: num, isTrunk: true })
-    
+
     if (!b) {
         return b
     }
-    
+
     if (isNonReversible(b.number)) {
         cache.set(keys.BLOCK_BY_ID(b.id), b)
         cache.set(key, b)
     }
-    return b  
+    return b
 }
 
 
@@ -97,7 +97,7 @@ export const getBlockNeighbourInTrunk = async (num: number) => {
         return cache.get(key) as Neighbour
     }
 
-    const nei: Neighbour = {prev:null, next: null}
+    const nei: Neighbour = { prev: null, next: null }
 
     if (num === 0) {
         const block = await getConnection()
@@ -111,7 +111,7 @@ export const getBlockNeighbourInTrunk = async (num: number) => {
         const blocks = await getConnection()
             .getRepository(Block)
             .find({
-                where: { number: In([num-1, num+1]), isTrunk: true },
+                where: { number: In([num - 1, num + 1]), isTrunk: true },
                 select: ['id']
             })
         nei.prev = blocks[0].id
@@ -152,15 +152,15 @@ export const getBranchBlockTransactions = async (blockID: string) => {
         .getRepository(BranchTransaction)
         .find({
             where: { blockID },
-            order: {seq: 'ASC'}
+            order: { seq: 'ASC' }
         })
-    
+
     return txs
 }
 
 // if lessThan = true, returns the highest block whose timestamp <= ts
 // if lessThan = false, returns the lowest block whose timestamp >= ts
-export const getBlockByTime = (ts: number, lessThan=true) => {
+export const getBlockByTime = (ts: number, lessThan = true) => {
     if (lessThan) {
         return getConnection()
             .getRepository(Block)
