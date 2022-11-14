@@ -16,6 +16,6 @@ export const getForkConfig = (net: Network): ForkConfig => {
 
     // mainnet
     return {
-        VIP220: Number.MAX_SAFE_INTEGER
+        VIP220: 13815000
     }
 }
