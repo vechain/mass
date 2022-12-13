@@ -28,7 +28,9 @@ export enum AssetType {
     DRAGON,
     VVET,
     VSEA,
-    BANANA
+    BANANA,
+    GOLD,
+    LGCT
 }
 
 export interface Token {
