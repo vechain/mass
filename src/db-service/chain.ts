@@ -1,7 +1,6 @@
 import { getForkConfig, Network } from '../config'
 import * as thor from '../thor';
 import { blockIDtoNum } from '../utils'
-import { getBest } from './block'
 
 const checkpointInterval = 180
 

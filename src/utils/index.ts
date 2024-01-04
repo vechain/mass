@@ -1,10 +1,9 @@
 import { HttpError } from 'express-toolbox'
 import { getConnection } from 'typeorm'
 import { Config } from '../explorer-db/entity/config'
-import { AssetType } from '../types'
 import { isUInt } from './validator'
+import { setupToken } from '../token'
 export * from './validator'
-export * from './asset'
 
 export const MAX_LIMIT = 50
 export const MAX_OFFSET = 50000
@@ -61,38 +60,15 @@ export const hexToBuffer = (val: string) => {
     return Buffer.from(sanitizeHex(val), 'hex')
 }
 
-// check supported assets with tasks in DB to avoid unknown transfer
-export const checkAssetTypeWithDB = async () => {
-    const AssetLiterals = Object.keys(AssetType).filter(x => x !== parseFloat(x).toString())
-
-    const heads = await getConnection()
+const TOKEN_CONFIG_KEY = 'token-config'
+export const loadTokenConfigFromDB = async () => {
+    const config = await getConnection()
         .getRepository(Config)
-        .find()
+        .findOne({ key: TOKEN_CONFIG_KEY })
     
-    const tokens:string[] = []
-    for (const head of heads) {
-        if (head.key.indexOf('token') === 0) {
-            const symbol = head.key.split('-')[1]
-            if (!AssetLiterals.includes(symbol)) {
-                throw new Error(`unknown token: ${symbol} in DB`)
-            }
-            tokens.push(symbol)
-        }
+    if(!config) {
+        throw new Error('token config not found')
     }
 
-    const unSeen = []
-    if (tokens.length != AssetLiterals.length - 2) {
-        for (const asset of AssetLiterals) {
-            if (asset === 'VET' || asset === 'VTHO') {
-                continue
-            }
-            if (!tokens.includes(asset)) {
-                unSeen.push(asset)
-            }
-        }
-    }
-    if (unSeen.length) {
-        console.log('No tasks for tokens: '+unSeen.join(', '))
-    }
-
+    setupToken(JSON.parse(config.value).config)
 }

@@ -1,10 +1,10 @@
 import { Router } from 'express'
 import { try$, HttpError } from 'express-toolbox'
-import { getAssetDecimals, isHexBytes, isUInt } from '../utils'
+import { isHexBytes, isUInt } from '../utils'
 import { getRecentTransactions, getTransaction } from '../db-service/transaction'
 import { getTransferByTX } from '../db-service/transfer'
 import { getPending } from '../db-service/pending'
-import { AssetType } from '../types'
+import { getAssetDecimals, getAssetSymbol } from '../token'
 
 const router = Router()
 export = router
@@ -31,12 +31,13 @@ router.get('/:txid', try$(async (req, res) => {
     if (tx) {
         const raw = await getTransferByTX(tx)
         const transfers = raw.filter(x => {
-            return !!AssetType[x.asset]
+            return getAssetSymbol(x.asset) !== 'N/A'
         }).map(x => {
+            const symbol = getAssetSymbol(x.asset)
             return {
                 ...x,
-                symbol: AssetType[x.asset],
-                decimals: getAssetDecimals(AssetType[x.asset] as keyof typeof AssetType),
+                symbol: symbol,
+                decimals: getAssetDecimals(symbol),
                 meta: { ...x.moveIndex },
                 moveIndex: undefined,
                 asset: undefined,
