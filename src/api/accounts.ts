@@ -31,6 +31,8 @@ router.get('/:address', try$(async (req, res) => {
             address: addr,
             balance: BigInt(0),
             energy: BigInt(0),
+            generated: BigInt(0),
+            paid: BigInt(0),
             blockTime: 0,
             code: null,
             master: null,
