@@ -1,12 +1,12 @@
 import { Router } from 'express'
 import { try$, HttpError } from 'express-toolbox'
-import { isHexBytes, isDate, getAssetDecimals } from '../utils'
+import { isHexBytes, isDate } from '../utils'
 import { getBlockByTime } from '../db-service/block'
 import { getAccountTransferByRange } from '../db-service/transfer'
 import { MoveType } from '../explorer-db/types'
 import BigNumber from 'bignumber.js'
 import { AggregatedMovement } from '../explorer-db/entity/aggregated-move'
-import { AssetType } from '../types'
+import { getAssetDecimals, getAssetSymbol } from '../token'
 
 const router = Router()
 export = router
@@ -37,12 +37,7 @@ router.post('/transfers/:address', try$(async (req, res) => {
     }
 
     const toSymbol = (tr: AggregatedMovement) => {
-        let decimals:number
-        if (tr.asset === AssetType.VET || tr.asset === AssetType.VTHO) {
-            decimals = 18
-        } else {
-            decimals = getAssetDecimals(AssetType[tr.asset] as keyof typeof AssetType)
-        }
+        const decimals = getAssetDecimals(getAssetSymbol(tr.asset))
         return new BigNumber(tr.movement.amount.toString()).div(new BigNumber(10).pow(decimals)).toString()
     }
 
@@ -71,12 +66,13 @@ router.post('/transfers/:address', try$(async (req, res) => {
         } else {
             str = 'self-transferred '
         }
-        str += toSymbol(tr) + ' ' + AssetType[tr.movement.asset]
+        str += toSymbol(tr) + ' ' + getAssetSymbol(tr.asset)
         return str
     }
 
     for (let tr of transfers) {
-        if (AssetType[tr.movement.asset]) {
+        const symbol = getAssetSymbol(tr.asset)
+        if (symbol!=='N/A') {
             const row = [
                 tr.movement.txID,
                 tr.seq.blockNumber,
@@ -84,7 +80,7 @@ router.post('/transfers/:address', try$(async (req, res) => {
                 tr.movement.sender,
                 tr.movement.recipient,
                 amount(tr),
-                AssetType[tr.movement.asset],
+                symbol,
                 fee(tr),
                 remark(tr)
             ]

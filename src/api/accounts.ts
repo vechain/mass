@@ -3,10 +3,10 @@ import { try$, HttpError } from 'express-toolbox'
 import { getAccount, getTokenBalance } from '../db-service/account'
 import { getAuthority, getSignedBlocks } from '../db-service/authority'
 import { MoveType } from '../explorer-db/types'
-import { parseOffset, parseLimit, DEFAULT_LIMIT, BLOCK_INTERVAL, ENERGY_GROWTH_RATE, normalizeAsset, isHexBytes, getAssetDecimals } from '../utils'
+import { parseOffset, parseLimit, DEFAULT_LIMIT, BLOCK_INTERVAL, ENERGY_GROWTH_RATE, isHexBytes } from '../utils'
 import { countAccountTransaction, getAccountTransaction, countAccountTransactionByType, getAccountTransactionByType } from '../db-service/transaction'
 import { countAccountTransfer, getAccountTransfer, countAccountTransferByAsset, getAccountTransferByAsset } from '../db-service/transfer'
-import { AssetType } from '../types'
+import { getAssetDecimals, getAssetSymbol, getAssetType, normalizeAsset } from '../token'
 
 const router = Router()
 export = router
@@ -43,8 +43,9 @@ router.get('/:address', try$(async (req, res) => {
     }
     const tokens: Array<{ symbol: string, balance: bigint, decimals: number }> = []
     for (let x of tokenBalance!) {
-        if (AssetType[x.type]) {
-            tokens.push({ symbol: AssetType[x.type], balance: x.balance, decimals: getAssetDecimals(AssetType[x.type] as keyof typeof AssetType)})
+        const symbol = getAssetSymbol(x.type)
+        if (symbol!=='N/A') {
+            tokens.push({ symbol: symbol, balance: x.balance, decimals: getAssetDecimals(symbol)})
         }
     }
 
@@ -158,13 +159,13 @@ router.get('/:address/transfers', try$(async (req, res) => {
     const offset = req.query.offset ? parseOffset(req.query.offset) : 0
     const limit = req.query.limit ? parseLimit(req.query.limit) : DEFAULT_LIMIT
 
-    let asset: AssetType | null = null
+    let asset: string | null = null
     if (req.query.asset) {
         const ass = normalizeAsset(req.query.asset)
         if (!ass) {
             throw new HttpError(400, 'invalid asset')
         }
-        asset = AssetType[ass as keyof typeof AssetType]
+        asset = ass
     }
 
     if (asset === null) {
@@ -174,12 +175,13 @@ router.get('/:address/transfers', try$(async (req, res) => {
         }
         const raw = await getAccountTransfer(addr, offset, limit)
         const transfers = raw.filter(x => {
-            return !!AssetType[x.asset]
+            return getAssetSymbol(x.asset) !== 'N/A'
         }).map(x => {
+            const symbol= getAssetSymbol(x.asset)
             return {
                 ...x.movement,
-                symbol: AssetType[x.asset],
-                decimals: getAssetDecimals(AssetType[x.asset] as keyof typeof AssetType),
+                symbol: symbol,
+                decimals: getAssetDecimals(symbol),
                 meta: {
                     blockID: x.movement.blockID,
                     blockNumber: x.movement.block.number,
@@ -196,16 +198,18 @@ router.get('/:address/transfers', try$(async (req, res) => {
         })
         res.json({ count, transfers })
     } else {
-        const count = await countAccountTransferByAsset(addr, asset)
+        const typ = getAssetType(asset)
+        const count = await countAccountTransferByAsset(addr, typ)
         if (!count || count <= offset) {
             return res.json({ count, transfers: [] })
         }
-        const raw = await getAccountTransferByAsset(addr, asset, offset, limit)
+        const raw = await getAccountTransferByAsset(addr, typ, offset, limit)
         const transfers = raw.map(x => {
+            const symbol = getAssetSymbol(x.asset)
             return {
                 ...x.movement,
-                symbol: AssetType[x.asset],
-                decimals: getAssetDecimals(AssetType[x.asset] as keyof typeof AssetType),
+                symbol: symbol,
+                decimals: getAssetDecimals(symbol),
                 meta: {
                     blockID: x.movement.blockID,
                     blockNumber: x.movement.block.number,

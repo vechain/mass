@@ -1,14 +1,13 @@
 import { getConnection, In, Between, MoreThanOrEqual } from 'typeorm'
-import { keys, cache, isNonReversible, agedCache } from './cache'
+import { keys, cache, isNonReversible } from './cache'
 import { blockIDtoNum } from '../utils'
 import { AssetMovement } from '../explorer-db/entity/movement'
 import { AggregatedMovement } from '../explorer-db/entity/aggregated-move'
 import { TransactionMeta } from '../explorer-db/entity/tx-meta'
-import { AssetType } from '../types'
 import { Counts } from '../explorer-db/entity/counts'
 import { CountType } from '../explorer-db/types'
 
-const maxAsset = Object.keys(AssetType).filter(x => x === parseInt(x).toString()).map(x => parseInt(x)).reduce((prev, curr) => prev > curr ? prev : curr)
+type AssetType = number
 
 export const getRecentTransfers = (limit: number) => {
     return getConnection()
@@ -47,9 +46,7 @@ export const countAccountTransfer = async (addr: string) => {
         .find({ address: addr, type: MoreThanOrEqual(CountType.Transfer) })
 
     for (const item of list) {
-        if (item.type <= CountType.Transfer + maxAsset) {
-            count += (item.in + item.out + item.self)
-        }
+        count += (item.in + item.out + item.self)
     }
 
     return count
