@@ -1,7 +1,8 @@
 import { Router } from 'express'
-import { HttpError, try$ } from 'express-toolbox'
+import { try$ } from 'express-toolbox'
 import { cache, keys } from '../db-service/cache'
 import { Net } from '../net'
+import { normalizeAsset } from '../token'
 
 const router = Router()
 export = router
@@ -9,20 +10,28 @@ export = router
 const GhIO = new Net('https://vechain.github.io')
 const CoinGecko = new Net('https://api.coingecko.com')
 
+interface Token {
+    symbol: string
+}
+
+const filterSupportedToken = (tokens: Array<Token>) => { 
+    return tokens.filter(x => normalizeAsset(x.symbol) !== 'N/A')
+}
+
 router.get('/tokens', try$(async (req, res) => {
-    let lastUpdated: null|object = null
+    let lastUpdated: null|Array<Token> = null
     if (cache.has(keys.TOKENS)) {
         const tokens = cache.get(keys.TOKENS)
         return res.json(tokens)
     } else {
         try {
-            const tokens = await GhIO.http<object>('GET', `token-registry/${process.env['NETWORK'] == 'testnet' ? 'test' : 'main'}.json`)
+            const tokens = await GhIO.http<Array<Token>>('GET', `token-registry/${process.env['NETWORK'] == 'testnet' ? 'test' : 'main'}.json`)
             cache.set(keys.TOKENS, tokens, 30 * 60 * 1000)
             lastUpdated = tokens
-            res.json(tokens)
+            res.json(filterSupportedToken(tokens))
         } catch (e) {
             if (!!lastUpdated) {
-                res.json(lastUpdated)
+                res.json(filterSupportedToken(lastUpdated))
             } else {
                 console.warn('registry: get token failed')
                 res.json([])
