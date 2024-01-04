@@ -14,7 +14,7 @@
   "license": "LGPL-3.0",
   "dependencies": {
     "@types/bignumber.js": "^5.0.0",
-    "better-sqlite3": "^7.1.1",
+    "better-sqlite3": "^7.6.2",
     "bignumber.js": "^9.0.0",
     "express": "^4.17.1",
     "express-toolbox": "^0.1.1",
